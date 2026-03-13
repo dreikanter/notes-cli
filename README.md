@@ -1,6 +1,6 @@
-# notes
+# Notes CLI
 
-CLI for managing a file-based archive of date-stamped markdown notes.
+A CLI tool for managing a file-based of markdown notes.
 
 ## Install
 
