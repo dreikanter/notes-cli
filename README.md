@@ -18,8 +18,11 @@ export PATH="$HOME/go/bin:$PATH"
 
 ## Versioning
 
-The patch version is auto-incremented by GitHub Actions on each PR merge to
-`main` (e.g. `v0.1.0` → `v0.1.1`). After merging, pull and reinstall locally:
+Patch version auto-increments on each PR merge to `main` via GitHub Actions
+(e.g. `v0.1.0` → `v0.1.1`). To bump minor or major, edit the version prefix in
+`.github/workflows/tag.yml` and push a manual tag (e.g. `git tag v0.2.0`).
+
+After merging, pull and reinstall locally:
 
 ```sh
 git pull --tags
