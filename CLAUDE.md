@@ -24,5 +24,3 @@ After merging a PR, reinstall locally:
 git checkout main && git pull --tags
 make install
 ```
-
-Manual fallback: `make tag V=0.6.0`.

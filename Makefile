@@ -1,4 +1,4 @@
-.PHONY: build test lint clean install tag
+.PHONY: build test lint clean install
 
 BINARY := notes
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
@@ -19,7 +19,3 @@ clean:
 install:
 	go install -ldflags "$(LDFLAGS)" ./cmd/notes
 
-tag:
-	@if [ -z "$(V)" ]; then echo "Usage: make tag V=0.5.0"; exit 1; fi
-	git tag v$(V)
-	git push origin v$(V)

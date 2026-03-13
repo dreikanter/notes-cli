@@ -48,8 +48,6 @@ make install
 notes --version
 ```
 
-To tag manually: `make tag V=0.6.0`
-
 ## Usage
 
 ```sh
