@@ -15,9 +15,8 @@ Version is set at build time via git tags and `-ldflags`. The `Version` var in
 `internal/cli/root.go` defaults to `"dev"` and is overridden by `make install`
 / `make build` using `git describe --tags`.
 
-Version format: `v0.{PR_number}.0` (e.g. PR #5 -> `v0.5.0`).
-
-Tags are created automatically by GitHub Actions on PR merge (`.github/workflows/tag.yml`).
+Minor version auto-increments on each PR merge via GitHub Actions
+(`.github/workflows/tag.yml`), e.g. `v0.5.0` → `v0.6.0`.
 
 After merging a PR, reinstall locally:
 
@@ -26,4 +25,4 @@ git checkout main && git pull --tags
 make install
 ```
 
-Manual fallback: `make tag V=0.X.0` (X = PR number).
+Manual fallback: `make tag V=0.6.0`.

@@ -39,10 +39,8 @@ tags, the binary reports the short commit hash as its version.
 
 ## Versioning
 
-Versions follow `v0.{PR_number}.0` format (e.g. PR #5 → `v0.5.0`).
-
-Tags are created automatically by GitHub Actions when a PR is merged to `main`.
-After merging, pull and reinstall locally:
+The minor version is auto-incremented by GitHub Actions on each PR merge to
+`main` (e.g. `v0.5.0` → `v0.6.0`). After merging, pull and reinstall locally:
 
 ```sh
 git pull --tags
@@ -50,11 +48,7 @@ make install
 notes --version
 ```
 
-To tag manually (e.g. if the action didn't run):
-
-```sh
-make tag V=0.X.0    # where X is the merged PR number
-```
+To tag manually: `make tag V=0.6.0`
 
 ## Usage
 
