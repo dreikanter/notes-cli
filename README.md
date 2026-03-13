@@ -21,21 +21,11 @@ go mod download
 make build       # produces ./notes binary
 ```
 
-Or directly:
-
-```sh
-go build -o notes ./cmd/notes
-```
-
 ## Install
 
-Install from the repo (no local clone needed):
-
 ```sh
-go install github.com/dreikanter/notescli/cmd/notes@latest
+make install     # installs to ~/go/bin/notes
 ```
-
-This places the `notes` binary in `$GOPATH/bin` (default `~/go/bin`).
 
 Make sure `~/go/bin` is on your `PATH`:
 
@@ -44,7 +34,19 @@ Make sure `~/go/bin` is on your `PATH`:
 export PATH="$HOME/go/bin:$PATH"
 ```
 
-To update, re-run the `go install` command.
+The version is derived from git tags at build time via `git describe`. Without
+tags, the binary reports the short commit hash as its version.
+
+## Versioning
+
+The minor version is auto-incremented by GitHub Actions on each PR merge to
+`main` (e.g. `v0.5.0` → `v0.6.0`). After merging, pull and reinstall locally:
+
+```sh
+git pull --tags
+make install
+notes --version
+```
 
 ## Usage
 

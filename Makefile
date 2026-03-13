@@ -18,3 +18,4 @@ clean:
 
 install:
 	go install -ldflags "$(LDFLAGS)" ./cmd/notes
+
