@@ -1,0 +1,21 @@
+name: Auto-tag on PR merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  tag:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create and push tag
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          TAG="v0.${PR_NUMBER}.0"
+          git tag "$TAG"
+          git push origin "$TAG"

@@ -17,10 +17,13 @@ Version is set at build time via git tags and `-ldflags`. The `Version` var in
 
 Version format: `v0.{PR_number}.0` (e.g. PR #5 -> `v0.5.0`).
 
-After merging a PR to `main`:
+Tags are created automatically by GitHub Actions on PR merge (`.github/workflows/tag.yml`).
+
+After merging a PR, reinstall locally:
 
 ```sh
-git checkout main && git pull
-make tag V=0.X.0        # X = merged PR number (tags + pushes to origin)
+git checkout main && git pull --tags
 make install
 ```
+
+Manual fallback: `make tag V=0.X.0` (X = PR number).
