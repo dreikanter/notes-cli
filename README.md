@@ -2,11 +2,10 @@
 
 A CLI tool for interacting with a date-based notes archive.
 
-## Build & Install
+## Install
 
 ```sh
-make build       # produces ./notes binary
-make install     # installs to ~/go/bin/notes
+go install github.com/dreikanter/notescli/cmd/notes@latest
 ```
 
 Make sure `~/go/bin` is on your `PATH`:
@@ -15,6 +14,8 @@ Make sure `~/go/bin` is on your `PATH`:
 # Add to ~/.zshrc or ~/.bashrc
 export PATH="$HOME/go/bin:$PATH"
 ```
+
+For development, use `make build` or `make install` from a local clone.
 
 ## Versioning
 
