@@ -40,15 +40,11 @@ var newCmd = &cobra.Command{
 
 		fullPath := filepath.Join(dir, filename)
 
-		var content string
-
-		// Build frontmatter if tags or description provided
-		fm := note.BuildFrontmatter(note.FrontmatterFields{
+		content := note.BuildFrontmatter(note.FrontmatterFields{
 			Title:       newTitle,
 			Tags:        newTags,
 			Description: newDescription,
 		})
-		content = fm
 
 		// Read from stdin if piped
 		if !isTerminal(os.Stdin) {
