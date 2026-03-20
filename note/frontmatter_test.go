@@ -6,57 +6,56 @@ import (
 
 func TestBuildFrontmatter(t *testing.T) {
 	tests := []struct {
-		name        string
-		slug        string
-		tags        []string
-		description string
-		title       string
-		want        string
+		name   string
+		fields FrontmatterFields
+		want   string
 	}{
 		{
 			name: "empty",
 			want: "",
 		},
 		{
-			name: "slug only",
-			slug: "todo",
-			want: "---\nslug: todo\n---\n\n",
+			name:   "slug only",
+			fields: FrontmatterFields{Slug: "todo"},
+			want:   "---\nslug: todo\n---\n\n",
 		},
 		{
-			name: "tags only",
-			tags: []string{"journal", "idea"},
-			want: "---\ntags: [journal, idea]\n---\n\n",
+			name:   "tags only",
+			fields: FrontmatterFields{Tags: []string{"journal", "idea"}},
+			want:   "---\ntags: [journal, idea]\n---\n\n",
 		},
 		{
-			name:        "description only",
-			description: "Quick thought",
-			want:        "---\ndescription: Quick thought\n---\n\n",
+			name:   "description only",
+			fields: FrontmatterFields{Description: "Quick thought"},
+			want:   "---\ndescription: Quick thought\n---\n\n",
 		},
 		{
-			name:        "all fields",
-			slug:        "weekly",
-			tags:        []string{"review"},
-			description: "Week 10",
-			title:       "Weekly Review",
-			want:        "---\ntitle: Weekly Review\nslug: weekly\ntags: [review]\ndescription: Week 10\n---\n\n",
+			name: "all fields",
+			fields: FrontmatterFields{
+				Title:       "Weekly Review",
+				Slug:        "weekly",
+				Tags:        []string{"review"},
+				Description: "Week 10",
+			},
+			want: "---\ntitle: Weekly Review\nslug: weekly\ntags: [review]\ndescription: Week 10\n---\n\n",
 		},
 		{
-			name: "single tag",
-			tags: []string{"journal"},
-			want: "---\ntags: [journal]\n---\n\n",
+			name:   "single tag",
+			fields: FrontmatterFields{Tags: []string{"journal"}},
+			want:   "---\ntags: [journal]\n---\n\n",
 		},
 		{
-			name:  "title only",
-			title: "My Note",
-			want:  "---\ntitle: My Note\n---\n\n",
+			name:   "title only",
+			fields: FrontmatterFields{Title: "My Note"},
+			want:   "---\ntitle: My Note\n---\n\n",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := BuildFrontmatter(tt.slug, tt.tags, tt.description, tt.title)
+			got := BuildFrontmatter(tt.fields)
 			if got != tt.want {
-				t.Errorf("BuildFrontmatter(%q, %v, %q, %q) =\n%q\nwant:\n%q", tt.slug, tt.tags, tt.description, tt.title, got, tt.want)
+				t.Errorf("BuildFrontmatter(%+v) =\n%q\nwant:\n%q", tt.fields, got, tt.want)
 			}
 		})
 	}
@@ -135,7 +134,7 @@ func TestStripFrontmatter(t *testing.T) {
 		},
 		{
 			name:  "roundtrip with BuildFrontmatter",
-			input: BuildFrontmatter("todo", []string{"journal"}, "A note", "") + "# Content\n",
+			input: BuildFrontmatter(FrontmatterFields{Slug: "todo", Tags: []string{"journal"}, Description: "A note"}) + "# Content\n",
 			want:  "# Content\n",
 		},
 	}

@@ -43,7 +43,11 @@ var newCmd = &cobra.Command{
 		var content string
 
 		// Build frontmatter if tags or description provided
-		fm := note.BuildFrontmatter("", newTags, newDescription, newTitle)
+		fm := note.BuildFrontmatter(note.FrontmatterFields{
+			Title:       newTitle,
+			Tags:        newTags,
+			Description: newDescription,
+		})
 		content = fm
 
 		// Read from stdin if piped
