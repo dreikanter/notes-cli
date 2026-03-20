@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/dreikanter/notescli/note"
@@ -26,14 +25,12 @@ var latestCmd = &cobra.Command{
 
 		if len(notes) == 0 {
 			if len(args) > 0 {
-				fmt.Fprintf(os.Stderr, "no notes found with type %q\n", args[0])
-			} else {
-				fmt.Fprintln(os.Stderr, "no notes found")
+				return fmt.Errorf("no notes found with type %q", args[0])
 			}
-			os.Exit(1)
+			return fmt.Errorf("no notes found")
 		}
 
-		fmt.Println(filepath.Join(root, notes[0].RelPath))
+		cmd.Println(filepath.Join(root, notes[0].RelPath))
 		return nil
 	},
 }
