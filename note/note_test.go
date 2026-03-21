@@ -98,6 +98,15 @@ func TestParseFilename(t *testing.T) {
 			wantBaseName: "2026010_1234",
 		},
 		{
+			name:         "distant future date",
+			input:        "120260106_8823",
+			wantDate:     "120260106",
+			wantID:       "8823",
+			wantSlug:     "",
+			wantType:     "",
+			wantBaseName: "120260106_8823",
+		},
+		{
 			name:    "date too short for MMDD",
 			input:   "2601_1234",
 			wantErr: true,
