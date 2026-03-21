@@ -20,7 +20,7 @@ var latestCmd = &cobra.Command{
 		}
 
 		if len(args) > 0 {
-			notes = note.FilterBySlug(notes, args[0])
+			notes = note.FilterByType(notes, args[0])
 		}
 
 		if len(notes) == 0 {

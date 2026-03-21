@@ -6,33 +6,77 @@ import (
 
 func TestParseFilename(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
-		wantDate string
-		wantID   string
-		wantSlug string
-		wantErr  bool
+		name         string
+		input        string
+		wantDate     string
+		wantID       string
+		wantSlug     string
+		wantType     string
+		wantBaseName string
+		wantErr      bool
 	}{
 		{
-			name:     "simple without slug",
-			input:    "20260106_8823",
-			wantDate: "20260106",
-			wantID:   "8823",
-			wantSlug: "",
+			name:         "simple without slug or type",
+			input:        "20260106_8823",
+			wantDate:     "20260106",
+			wantID:       "8823",
+			wantSlug:     "",
+			wantType:     "",
+			wantBaseName: "20260106_8823",
 		},
 		{
-			name:     "with slug",
-			input:    "20260102_8814_todo",
-			wantDate: "20260102",
-			wantID:   "8814",
-			wantSlug: "todo",
+			name:         "with slug only",
+			input:        "20241203_6973_disable-letter_opener",
+			wantDate:     "20241203",
+			wantID:       "6973",
+			wantSlug:     "disable-letter_opener",
+			wantType:     "",
+			wantBaseName: "20241203_6973_disable-letter_opener",
 		},
 		{
-			name:     "slug with underscores",
-			input:    "20241203_6973_disable-letter_opener",
-			wantDate: "20241203",
-			wantID:   "6973",
-			wantSlug: "disable-letter_opener",
+			name:         "with type only",
+			input:        "20260102_8814.todo",
+			wantDate:     "20260102",
+			wantID:       "8814",
+			wantSlug:     "",
+			wantType:     "todo",
+			wantBaseName: "20260102_8814",
+		},
+		{
+			name:         "with slug and type",
+			input:        "20260102_8814_standup.todo",
+			wantDate:     "20260102",
+			wantID:       "8814",
+			wantSlug:     "standup",
+			wantType:     "todo",
+			wantBaseName: "20260102_8814_standup",
+		},
+		{
+			name:         "backlog type",
+			input:        "20260312_9219.backlog",
+			wantDate:     "20260312",
+			wantID:       "9219",
+			wantSlug:     "",
+			wantType:     "backlog",
+			wantBaseName: "20260312_9219",
+		},
+		{
+			name:         "weekly type",
+			input:        "20260312_9219.weekly",
+			wantDate:     "20260312",
+			wantID:       "9219",
+			wantSlug:     "",
+			wantType:     "weekly",
+			wantBaseName: "20260312_9219",
+		},
+		{
+			name:         "unknown dot suffix treated as slug",
+			input:        "20260312_9219_foo.bar",
+			wantDate:     "20260312",
+			wantID:       "9219",
+			wantSlug:     "foo.bar",
+			wantType:     "",
+			wantBaseName: "20260312_9219_foo.bar",
 		},
 		{
 			name:    "missing parts",
@@ -87,9 +131,30 @@ func TestParseFilename(t *testing.T) {
 			if got.Slug != tt.wantSlug {
 				t.Errorf("Slug = %q, want %q", got.Slug, tt.wantSlug)
 			}
-			if got.BaseName != tt.input {
-				t.Errorf("BaseName = %q, want %q", got.BaseName, tt.input)
+			if got.Type != tt.wantType {
+				t.Errorf("Type = %q, want %q", got.Type, tt.wantType)
+			}
+			if got.BaseName != tt.wantBaseName {
+				t.Errorf("BaseName = %q, want %q", got.BaseName, tt.wantBaseName)
 			}
 		})
+	}
+}
+
+func TestIsKnownType(t *testing.T) {
+	if !IsKnownType("todo") {
+		t.Error("expected todo to be a known type")
+	}
+	if !IsKnownType("backlog") {
+		t.Error("expected backlog to be a known type")
+	}
+	if !IsKnownType("weekly") {
+		t.Error("expected weekly to be a known type")
+	}
+	if IsKnownType("random") {
+		t.Error("expected random to not be a known type")
+	}
+	if IsKnownType("") {
+		t.Error("expected empty string to not be a known type")
 	}
 }

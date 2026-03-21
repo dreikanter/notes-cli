@@ -50,7 +50,7 @@ func TestLatestWithType(t *testing.T) {
 	}
 
 	root := testdataPath(t)
-	want := filepath.Join(root, "2026/01/20260102_8814_todo.md")
+	want := filepath.Join(root, "2026/01/20260102_8814.todo.md")
 	if out != want {
 		t.Errorf("got %q, want %q", out, want)
 	}

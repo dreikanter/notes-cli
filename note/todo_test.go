@@ -201,20 +201,23 @@ func TestFormatTodoContentEmpty(t *testing.T) {
 
 func TestNoteFilename(t *testing.T) {
 	tests := []struct {
-		date string
-		id   int
-		slug string
-		want string
+		date     string
+		id       int
+		slug     string
+		noteType string
+		want     string
 	}{
-		{"20260312", 9219, "", "20260312_9219.md"},
-		{"20260312", 9219, "my-note", "20260312_9219_my-note.md"},
-		{"20260312", 9219, "todo", "20260312_9219_todo.md"},
+		{"20260312", 9219, "", "", "20260312_9219.md"},
+		{"20260312", 9219, "my-note", "", "20260312_9219_my-note.md"},
+		{"20260312", 9219, "", "todo", "20260312_9219.todo.md"},
+		{"20260312", 9219, "standup", "todo", "20260312_9219_standup.todo.md"},
+		{"20260312", 9219, "", "backlog", "20260312_9219.backlog.md"},
 	}
 
 	for _, tt := range tests {
-		got := NoteFilename(tt.date, tt.id, tt.slug)
+		got := NoteFilename(tt.date, tt.id, tt.slug, tt.noteType)
 		if got != tt.want {
-			t.Errorf("NoteFilename(%q, %d, %q) = %q, want %q", tt.date, tt.id, tt.slug, got, tt.want)
+			t.Errorf("NoteFilename(%q, %d, %q, %q) = %q, want %q", tt.date, tt.id, tt.slug, tt.noteType, got, tt.want)
 		}
 	}
 }
@@ -229,10 +232,10 @@ func TestNoteDirPath(t *testing.T) {
 
 func TestFindLatestTodo(t *testing.T) {
 	notes := []Note{
-		{Date: "20260312", Slug: "todo", RelPath: "2026/03/20260312_100_todo.md"},
-		{Date: "20260311", Slug: "todo", RelPath: "2026/03/20260311_99_todo.md"},
-		{Date: "20260310", Slug: "", RelPath: "2026/03/20260310_98.md"},
-		{Date: "20260309", Slug: "todo", RelPath: "2026/03/20260309_97_todo.md"},
+		{Date: "20260312", Type: "todo", RelPath: "2026/03/20260312_100.todo.md"},
+		{Date: "20260311", Type: "todo", RelPath: "2026/03/20260311_99.todo.md"},
+		{Date: "20260310", Type: "", RelPath: "2026/03/20260310_98.md"},
+		{Date: "20260309", Type: "todo", RelPath: "2026/03/20260309_97.todo.md"},
 	}
 
 	got := FindLatestTodo(notes, "20260312")
@@ -246,7 +249,7 @@ func TestFindLatestTodo(t *testing.T) {
 
 func TestFindLatestTodoNone(t *testing.T) {
 	notes := []Note{
-		{Date: "20260312", Slug: "todo"},
+		{Date: "20260312", Type: "todo"},
 	}
 	got := FindLatestTodo(notes, "20260312")
 	if got != nil {
@@ -256,8 +259,8 @@ func TestFindLatestTodoNone(t *testing.T) {
 
 func TestFindTodayTodo(t *testing.T) {
 	notes := []Note{
-		{Date: "20260312", Slug: "todo", RelPath: "2026/03/20260312_100_todo.md"},
-		{Date: "20260311", Slug: "todo", RelPath: "2026/03/20260311_99_todo.md"},
+		{Date: "20260312", Type: "todo", RelPath: "2026/03/20260312_100.todo.md"},
+		{Date: "20260311", Type: "todo", RelPath: "2026/03/20260311_99.todo.md"},
 	}
 
 	got := FindTodayTodo(notes, "20260312")

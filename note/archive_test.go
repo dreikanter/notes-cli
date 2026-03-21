@@ -38,6 +38,14 @@ func TestScan(t *testing.T) {
 	if notes[3].ID != "6973" {
 		t.Errorf("notes[3].ID = %q, want 6973 (oldest)", notes[3].ID)
 	}
+
+	// Verify type is parsed from renamed testdata file
+	if notes[2].Type != "todo" {
+		t.Errorf("notes[2].Type = %q, want \"todo\"", notes[2].Type)
+	}
+	if notes[2].Slug != "" {
+		t.Errorf("notes[2].Slug = %q, want \"\"", notes[2].Slug)
+	}
 }
 
 func TestScanSkipsInvalidFiles(t *testing.T) {
@@ -56,9 +64,9 @@ func TestScanSkipsInvalidFiles(t *testing.T) {
 
 func TestResolve(t *testing.T) {
 	notes := []Note{
-		{RelPath: "2026/01/20260106_8823.md", ID: "8823", Slug: "", BaseName: "20260106_8823"},
-		{RelPath: "2026/01/20260102_8814_todo.md", ID: "8814", Slug: "todo", BaseName: "20260102_8814_todo"},
-		{RelPath: "2024/12/20241203_6973_disable-letter_opener.md", ID: "6973", Slug: "disable-letter_opener", BaseName: "20241203_6973_disable-letter_opener"},
+		{RelPath: "2026/01/20260106_8823.md", ID: "8823", Slug: "", Type: "", BaseName: "20260106_8823"},
+		{RelPath: "2026/01/20260102_8814.todo.md", ID: "8814", Slug: "", Type: "todo", BaseName: "20260102_8814"},
+		{RelPath: "2024/12/20241203_6973_disable-letter_opener.md", ID: "6973", Slug: "disable-letter_opener", Type: "", BaseName: "20241203_6973_disable-letter_opener"},
 	}
 
 	tests := []struct {
@@ -68,8 +76,8 @@ func TestResolve(t *testing.T) {
 	}{
 		{"by id", "8823", "8823"},
 		{"by id second", "6973", "6973"},
-		{"by slug", "todo", "8814"},
 		{"by slug with special chars", "disable-letter_opener", "6973"},
+		{"by type", "todo", "8814"},
 		{"by basename", "20260106_8823", "8823"},
 		{"by basename with md", "20260106_8823.md", "8823"},
 		{"not found", "9999", ""},
@@ -97,9 +105,9 @@ func TestResolve(t *testing.T) {
 
 func TestFilter(t *testing.T) {
 	notes := []Note{
-		{BaseName: "20260106_8823"},
-		{BaseName: "20260102_8814_todo"},
-		{BaseName: "20241203_6973_disable-letter_opener"},
+		{BaseName: "20260106_8823", Type: ""},
+		{BaseName: "20260102_8814", Type: "todo"},
+		{BaseName: "20241203_6973_disable-letter_opener", Type: ""},
 	}
 
 	tests := []struct {
@@ -108,9 +116,9 @@ func TestFilter(t *testing.T) {
 		wantLen  int
 	}{
 		{"by id fragment", "882", 1},
-		{"by slug fragment", "todo", 1},
+		{"by type fragment", "todo", 1},
 		{"by date fragment", "2026", 2},
-		{"case insensitive", "TODO", 1},
+		{"case insensitive type", "TODO", 1},
 		{"no match", "zzz", 0},
 		{"matches all with underscore", "_", 3},
 	}
@@ -167,13 +175,13 @@ func TestFilterByTags(t *testing.T) {
 func TestFilterBySlug(t *testing.T) {
 	notes := []Note{
 		{Slug: ""},
-		{Slug: "todo"},
+		{Slug: "api-redesign"},
 		{Slug: "disable-letter_opener"},
 	}
 
-	got := FilterBySlug(notes, "todo")
+	got := FilterBySlug(notes, "api-redesign")
 	if len(got) != 1 {
-		t.Errorf("FilterBySlug(todo) returned %d, want 1", len(got))
+		t.Errorf("FilterBySlug(api-redesign) returned %d, want 1", len(got))
 	}
 
 	got = FilterBySlug(notes, "")
@@ -184,5 +192,34 @@ func TestFilterBySlug(t *testing.T) {
 	got = FilterBySlug(notes, "nope")
 	if len(got) != 0 {
 		t.Errorf("FilterBySlug(nope) returned %d, want 0", len(got))
+	}
+}
+
+func TestFilterByType(t *testing.T) {
+	notes := []Note{
+		{Type: ""},
+		{Type: "todo"},
+		{Type: "backlog"},
+		{Type: "todo"},
+	}
+
+	got := FilterByType(notes, "todo")
+	if len(got) != 2 {
+		t.Errorf("FilterByType(todo) returned %d, want 2", len(got))
+	}
+
+	got = FilterByType(notes, "backlog")
+	if len(got) != 1 {
+		t.Errorf("FilterByType(backlog) returned %d, want 1", len(got))
+	}
+
+	got = FilterByType(notes, "")
+	if len(got) != 1 {
+		t.Errorf("FilterByType('') returned %d, want 1", len(got))
+	}
+
+	got = FilterByType(notes, "nope")
+	if len(got) != 0 {
+		t.Errorf("FilterByType(nope) returned %d, want 0", len(got))
 	}
 }

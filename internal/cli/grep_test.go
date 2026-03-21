@@ -44,7 +44,7 @@ func TestGrepFindsMatch(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, "20260102_8814_todo.md") {
+	if !strings.Contains(out, "20260102_8814.todo.md") {
 		t.Errorf("expected output to contain todo note, got %q", out)
 	}
 }
@@ -61,7 +61,7 @@ func TestGrepCaseInsensitive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, "20260102_8814_todo.md") {
+	if !strings.Contains(out, "20260102_8814.todo.md") {
 		t.Errorf("expected output to contain todo note, got %q", out)
 	}
 }

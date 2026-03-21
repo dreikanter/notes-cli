@@ -122,7 +122,7 @@ func FormatTodoContent(tasks []Task) string {
 func FindLatestTodo(notes []Note, beforeDate string) *Note {
 	// notes are sorted newest-first
 	for i := range notes {
-		if notes[i].Slug == "todo" && notes[i].Date < beforeDate {
+		if notes[i].Type == "todo" && notes[i].Date < beforeDate {
 			return &notes[i]
 		}
 	}
@@ -132,7 +132,7 @@ func FindLatestTodo(notes []Note, beforeDate string) *Note {
 // FindTodayTodo finds a todo note matching today's date.
 func FindTodayTodo(notes []Note, today string) *Note {
 	for i := range notes {
-		if notes[i].Slug == "todo" && notes[i].Date == today {
+		if notes[i].Type == "todo" && notes[i].Date == today {
 			return &notes[i]
 		}
 	}
