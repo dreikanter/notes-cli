@@ -1,8 +1,6 @@
 package note
 
 import (
-	"fmt"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -132,26 +130,11 @@ func FindLatestTodo(notes []Note, beforeDate string) *Note {
 }
 
 // FindTodayTodo finds a todo note matching today's date.
-func FindTodayTodo(root string, notes []Note, today string) *Note {
+func FindTodayTodo(notes []Note, today string) *Note {
 	for i := range notes {
 		if notes[i].Slug == "todo" && notes[i].Date == today {
 			return &notes[i]
 		}
 	}
 	return nil
-}
-
-// NoteFilename generates a note filename from date, id, and optional slug.
-func NoteFilename(date string, id int, slug string) string {
-	if slug != "" {
-		return fmt.Sprintf("%s_%d_%s.md", date, id, slug)
-	}
-	return fmt.Sprintf("%s_%d.md", date, id)
-}
-
-// NoteDirPath returns the YYYY/MM directory path for a given date string (YYYYMMDD).
-func NoteDirPath(root, date string) string {
-	year := date[:4]
-	month := date[4:6]
-	return filepath.Join(root, year, month)
 }

@@ -2,6 +2,7 @@ package note
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 )
 
@@ -43,6 +44,21 @@ func ParseFilename(baseName string) (Note, error) {
 		Slug:     slug,
 		BaseName: baseName,
 	}, nil
+}
+
+// NoteFilename generates a note filename from date, id, and optional slug.
+func NoteFilename(date string, id int, slug string) string {
+	if slug != "" {
+		return fmt.Sprintf("%s_%d_%s.md", date, id, slug)
+	}
+	return fmt.Sprintf("%s_%d.md", date, id)
+}
+
+// NoteDirPath returns the YYYY/MM directory path for a given date string (YYYYMMDD).
+func NoteDirPath(root, date string) string {
+	year := date[:4]
+	month := date[4:6]
+	return filepath.Join(root, year, month)
 }
 
 func isDigits(s string) bool {
