@@ -2,6 +2,7 @@ package note
 
 import (
 	"io/fs"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -88,6 +89,24 @@ func Filter(notes []Note, fragment string) []Note {
 		}
 	}
 	return results
+}
+
+// FilterByTag returns notes that contain the given tag in their frontmatter.
+func FilterByTag(notes []Note, root string, tag string) ([]Note, error) {
+	var results []Note
+	for _, n := range notes {
+		data, err := os.ReadFile(filepath.Join(root, n.RelPath))
+		if err != nil {
+			return nil, err
+		}
+		for _, t := range ParseTags(data) {
+			if t == tag {
+				results = append(results, n)
+				break
+			}
+		}
+	}
+	return results, nil
 }
 
 // FilterBySlug returns notes with an exact slug match.

@@ -21,19 +21,22 @@ func TestScan(t *testing.T) {
 		t.Fatalf("Scan(%q) error: %v", root, err)
 	}
 
-	if len(notes) != 3 {
-		t.Fatalf("Scan returned %d notes, want 3", len(notes))
+	if len(notes) != 4 {
+		t.Fatalf("Scan returned %d notes, want 4", len(notes))
 	}
 
 	// Should be sorted newest first (descending RelPath)
 	if notes[0].ID != "8823" {
 		t.Errorf("notes[0].ID = %q, want 8823 (newest)", notes[0].ID)
 	}
-	if notes[1].ID != "8814" {
-		t.Errorf("notes[1].ID = %q, want 8814", notes[1].ID)
+	if notes[1].ID != "8818" {
+		t.Errorf("notes[1].ID = %q, want 8818", notes[1].ID)
 	}
-	if notes[2].ID != "6973" {
-		t.Errorf("notes[2].ID = %q, want 6973 (oldest)", notes[2].ID)
+	if notes[2].ID != "8814" {
+		t.Errorf("notes[2].ID = %q, want 8814", notes[2].ID)
+	}
+	if notes[3].ID != "6973" {
+		t.Errorf("notes[3].ID = %q, want 6973 (oldest)", notes[3].ID)
 	}
 }
 
@@ -117,6 +120,43 @@ func TestFilter(t *testing.T) {
 			got := Filter(notes, tt.fragment)
 			if len(got) != tt.wantLen {
 				t.Errorf("Filter(%q) returned %d results, want %d", tt.fragment, len(got), tt.wantLen)
+			}
+		})
+	}
+}
+
+func TestFilterByTag(t *testing.T) {
+	root := testdataPath(t)
+	notes, err := Scan(root)
+	if err != nil {
+		t.Fatalf("Scan error: %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		tag     string
+		wantLen int
+		wantIDs []string
+	}{
+		{"shared tag", "work", 3, []string{"8823", "8818", "8814"}},
+		{"unique tag", "meeting", 1, []string{"8818"}},
+		{"planning tag", "planning", 1, []string{"8814"}},
+		{"no match", "nonexistent", 0, nil},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := FilterByTag(notes, root, tt.tag)
+			if err != nil {
+				t.Fatalf("FilterByTag(%q) error: %v", tt.tag, err)
+			}
+			if len(got) != tt.wantLen {
+				t.Fatalf("FilterByTag(%q) returned %d notes, want %d", tt.tag, len(got), tt.wantLen)
+			}
+			for i, wantID := range tt.wantIDs {
+				if got[i].ID != wantID {
+					t.Errorf("FilterByTag(%q)[%d].ID = %q, want %q", tt.tag, i, got[i].ID, wantID)
+				}
 			}
 		})
 	}
