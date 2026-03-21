@@ -48,6 +48,7 @@ notes ls
 notes ls --limit 10
 notes ls --type todo
 notes ls --tag work
+notes ls --tag work --tag meeting
 notes ls --tag work --type todo
 
 # Search note contents

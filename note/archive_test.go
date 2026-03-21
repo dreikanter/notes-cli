@@ -125,7 +125,7 @@ func TestFilter(t *testing.T) {
 	}
 }
 
-func TestFilterByTag(t *testing.T) {
+func TestFilterByTags(t *testing.T) {
 	root := testdataPath(t)
 	notes, err := Scan(root)
 	if err != nil {
@@ -134,28 +134,30 @@ func TestFilterByTag(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		tag     string
+		tags    []string
 		wantLen int
 		wantIDs []string
 	}{
-		{"shared tag", "work", 3, []string{"8823", "8818", "8814"}},
-		{"unique tag", "meeting", 1, []string{"8818"}},
-		{"planning tag", "planning", 1, []string{"8814"}},
-		{"no match", "nonexistent", 0, nil},
+		{"single shared tag", []string{"work"}, 3, []string{"8823", "8818", "8814"}},
+		{"single unique tag", []string{"meeting"}, 1, []string{"8818"}},
+		{"two tags AND", []string{"work", "planning"}, 1, []string{"8814"}},
+		{"two tags AND meeting", []string{"work", "meeting"}, 1, []string{"8818"}},
+		{"no match", []string{"nonexistent"}, 0, nil},
+		{"one matching one not", []string{"work", "nonexistent"}, 0, nil},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := FilterByTag(notes, root, tt.tag)
+			got, err := FilterByTags(notes, root, tt.tags)
 			if err != nil {
-				t.Fatalf("FilterByTag(%q) error: %v", tt.tag, err)
+				t.Fatalf("FilterByTags(%v) error: %v", tt.tags, err)
 			}
 			if len(got) != tt.wantLen {
-				t.Fatalf("FilterByTag(%q) returned %d notes, want %d", tt.tag, len(got), tt.wantLen)
+				t.Fatalf("FilterByTags(%v) returned %d notes, want %d", tt.tags, len(got), tt.wantLen)
 			}
 			for i, wantID := range tt.wantIDs {
 				if got[i].ID != wantID {
-					t.Errorf("FilterByTag(%q)[%d].ID = %q, want %q", tt.tag, i, got[i].ID, wantID)
+					t.Errorf("FilterByTags(%v)[%d].ID = %q, want %q", tt.tags, i, got[i].ID, wantID)
 				}
 			}
 		})

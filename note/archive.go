@@ -91,22 +91,33 @@ func Filter(notes []Note, fragment string) []Note {
 	return results
 }
 
-// FilterByTag returns notes that contain the given tag in their frontmatter.
-func FilterByTag(notes []Note, root string, tag string) ([]Note, error) {
+// FilterByTags returns notes that contain all of the given tags in their frontmatter.
+func FilterByTags(notes []Note, root string, tags []string) ([]Note, error) {
 	var results []Note
 	for _, n := range notes {
 		data, err := os.ReadFile(filepath.Join(root, n.RelPath))
 		if err != nil {
 			return nil, err
 		}
-		for _, t := range ParseTags(data) {
-			if t == tag {
-				results = append(results, n)
-				break
-			}
+		noteTags := ParseTags(data)
+		if hasAllTags(noteTags, tags) {
+			results = append(results, n)
 		}
 	}
 	return results, nil
+}
+
+func hasAllTags(noteTags []string, required []string) bool {
+	set := make(map[string]struct{}, len(noteTags))
+	for _, t := range noteTags {
+		set[t] = struct{}{}
+	}
+	for _, r := range required {
+		if _, ok := set[r]; !ok {
+			return false
+		}
+	}
+	return true
 }
 
 // FilterBySlug returns notes with an exact slug match.
