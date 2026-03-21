@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/dreikanter/notescli/note"
@@ -13,6 +14,7 @@ import (
 
 var (
 	newSlug        string
+	newType        string
 	newTags        []string
 	newDescription string
 	newTitle       string
@@ -23,6 +25,10 @@ var newCmd = &cobra.Command{
 	Short: "Create a new note",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if newType != "" && !note.IsKnownType(newType) {
+			return fmt.Errorf("unknown note type %q (valid types: %s)", newType, strings.Join(note.KnownTypes, ", "))
+		}
+
 		root := mustNotesPath()
 		today := time.Now().Format("20060102")
 
@@ -31,7 +37,7 @@ var newCmd = &cobra.Command{
 			return err
 		}
 
-		filename := note.NoteFilename(today, id, newSlug)
+		filename := note.NoteFilename(today, id, newSlug, newType)
 		dir := note.NoteDirPath(root, today)
 
 		if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -73,7 +79,8 @@ func isTerminal(f *os.File) bool {
 }
 
 func init() {
-	newCmd.Flags().StringVar(&newSlug, "slug", "", "slug appended to filename")
+	newCmd.Flags().StringVar(&newSlug, "slug", "", "descriptive slug appended to filename")
+	newCmd.Flags().StringVar(&newType, "type", "", "note type (todo, backlog, weekly)")
 	newCmd.Flags().StringArrayVar(&newTags, "tag", nil, "tag for frontmatter (repeatable)")
 	newCmd.Flags().StringVar(&newDescription, "description", "", "description for frontmatter")
 	newCmd.Flags().StringVar(&newTitle, "title", "", "title for frontmatter")

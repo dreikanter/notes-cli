@@ -14,6 +14,7 @@ func runLs(t *testing.T, args ...string) (string, error) {
 	root := testdataPath(t)
 	lsTags = nil
 	lsType = ""
+	lsSlug = ""
 	lsLimit = 20
 	lsCmd.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 

@@ -10,6 +10,7 @@ import (
 var (
 	lsLimit int
 	lsType  string
+	lsSlug  string
 	lsTags  []string
 )
 
@@ -25,7 +26,11 @@ var lsCmd = &cobra.Command{
 		}
 
 		if lsType != "" {
-			notes = note.FilterBySlug(notes, lsType)
+			notes = note.FilterByType(notes, lsType)
+		}
+
+		if lsSlug != "" {
+			notes = note.FilterBySlug(notes, lsSlug)
 		}
 
 		if len(lsTags) > 0 {
@@ -48,7 +53,8 @@ var lsCmd = &cobra.Command{
 
 func init() {
 	lsCmd.Flags().IntVar(&lsLimit, "limit", 20, "maximum number of notes to list")
-	lsCmd.Flags().StringVar(&lsType, "type", "", "filter by note type (slug), e.g. todo, backlog, weekly")
+	lsCmd.Flags().StringVar(&lsType, "type", "", "filter by note type, e.g. todo, backlog, weekly")
+	lsCmd.Flags().StringVar(&lsSlug, "slug", "", "filter by descriptive slug")
 	lsCmd.Flags().StringSliceVar(&lsTags, "tag", nil, "filter by frontmatter tag (repeatable, AND logic)")
 	rootCmd.AddCommand(lsCmd)
 }

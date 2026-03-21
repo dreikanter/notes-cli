@@ -49,7 +49,7 @@ func Scan(root string) ([]Note, error) {
 	return notes, nil
 }
 
-// Resolve finds a single note matching the query by ID, slug, or base filename.
+// Resolve finds a single note matching the query by ID, slug, type, or base filename.
 // Returns the first (most recent) match, or nil if not found.
 func Resolve(notes []Note, query string) *Note {
 	// Strip .md extension if provided
@@ -69,6 +69,13 @@ func Resolve(notes []Note, query string) *Note {
 		}
 	}
 
+	// Try exact type match
+	for i := range notes {
+		if notes[i].Type != "" && notes[i].Type == query {
+			return &notes[i]
+		}
+	}
+
 	// Try exact base filename match
 	for i := range notes {
 		if notes[i].BaseName == query {
@@ -79,12 +86,13 @@ func Resolve(notes []Note, query string) *Note {
 	return nil
 }
 
-// Filter returns all notes whose base filename contains the fragment (case-insensitive).
+// Filter returns all notes whose base filename or type contains the fragment (case-insensitive).
 func Filter(notes []Note, fragment string) []Note {
 	fragment = strings.ToLower(fragment)
 	var results []Note
 	for _, n := range notes {
-		if strings.Contains(strings.ToLower(n.BaseName), fragment) {
+		if strings.Contains(strings.ToLower(n.BaseName), fragment) ||
+			strings.Contains(strings.ToLower(n.Type), fragment) {
 			results = append(results, n)
 		}
 	}
@@ -125,6 +133,17 @@ func FilterBySlug(notes []Note, slug string) []Note {
 	var results []Note
 	for _, n := range notes {
 		if n.Slug == slug {
+			results = append(results, n)
+		}
+	}
+	return results
+}
+
+// FilterByType returns notes with an exact type match.
+func FilterByType(notes []Note, noteType string) []Note {
+	var results []Note
+	for _, n := range notes {
+		if n.Type == noteType {
 			results = append(results, n)
 		}
 	}
