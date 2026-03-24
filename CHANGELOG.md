@@ -7,6 +7,10 @@
 - Add `rg` command for searching note contents using ripgrep ([#27])
 - Add default options for `rg` and `grep` subcommands ([#28])
 
+### Changed
+
+- Replace positional `[type]` argument in `latest` with `--type`, `--slug`, and `--tag` flags
+
 ## [0.1.19] - 2026-03-23
 
 ### Fixed
