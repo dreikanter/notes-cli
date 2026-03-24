@@ -109,16 +109,30 @@ func TestAppendByAbsolutePath(t *testing.T) {
 
 func TestAppendByRelativePath(t *testing.T) {
 	root := copyTestdata(t)
-	target := filepath.Join(root, "2026/01/20260106_8823.md")
 
-	out, err := runAppend(t, root, "rel append", target)
+	// chdir into the temp root so a relative path containing "/" works
+	oldWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("cannot get working directory: %v", err)
+	}
+	if err := os.Chdir(root); err != nil {
+		t.Fatalf("cannot chdir: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(oldWd) })
+
+	out, err := runAppend(t, root, "rel append", "2026/01/20260106_8823.md")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	resolved, _ := filepath.EvalSymlinks(target)
+	resolved, _ := filepath.EvalSymlinks(filepath.Join(root, "2026/01/20260106_8823.md"))
 	if out != resolved {
 		t.Errorf("got output %q, want %q", out, resolved)
+	}
+
+	data, _ := os.ReadFile(filepath.Join(root, "2026/01/20260106_8823.md"))
+	if !strings.Contains(string(data), "rel append") {
+		t.Error("appended text not found in file")
 	}
 }
 

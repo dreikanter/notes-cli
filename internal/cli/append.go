@@ -64,28 +64,11 @@ var appendCmd = &cobra.Command{
 				targetPath = filepath.Join(root, n.RelPath)
 			}
 		} else if hasFilters {
-			notes, scanErr := note.Scan(root)
-			if scanErr != nil {
-				return scanErr
+			n, filterErr := scanAndFilter(cmd, root)
+			if filterErr != nil {
+				return filterErr
 			}
-
-			if len(types) > 0 {
-				notes = note.FilterByTypes(notes, types)
-			}
-			if len(slugs) > 0 {
-				notes = note.FilterBySlugs(notes, slugs)
-			}
-			if len(tags) > 0 {
-				notes, err = note.FilterByTags(notes, root, tags)
-				if err != nil {
-					return err
-				}
-			}
-
-			if len(notes) == 0 {
-				return fmt.Errorf("no notes found matching the given criteria")
-			}
-			targetPath = filepath.Join(root, notes[0].RelPath)
+			targetPath = filepath.Join(root, n.RelPath)
 		} else {
 			return fmt.Errorf("specify a note by positional argument or filter flags (--type, --slug, --tag)")
 		}
@@ -119,7 +102,7 @@ func resolveFilePath(arg, root string) (string, error) {
 	}
 	absPath, err = filepath.EvalSymlinks(absPath)
 	if err != nil {
-		return "", fmt.Errorf("cannot resolve path: %w", err)
+		return "", fmt.Errorf("note not found: %s", arg)
 	}
 
 	absRoot, err := filepath.EvalSymlinks(root)
@@ -129,10 +112,6 @@ func resolveFilePath(arg, root string) (string, error) {
 
 	if !strings.HasPrefix(absPath, absRoot+"/") {
 		return "", fmt.Errorf("path is outside notes directory: %s", arg)
-	}
-
-	if _, err := os.Stat(absPath); err != nil {
-		return "", fmt.Errorf("note not found: %s", arg)
 	}
 
 	return absPath, nil
