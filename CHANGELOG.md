@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.23] - 2026-03-24
+
 ### Added
 
 - Add `rg` command for searching note contents using ripgrep ([#27])
@@ -96,6 +98,7 @@
 - Add `new` and `new-todo` commands ([#2])
 - Add `--no-frontmatter` flag to `read` command ([#3], [#4])
 
+[0.1.23]: https://github.com/dreikanter/notescli/releases/tag/v0.1.23
 [0.1.19]: https://github.com/dreikanter/notescli/releases/tag/v0.1.19
 [0.1.18]: https://github.com/dreikanter/notescli/releases/tag/v0.1.18
 [0.1.17]: https://github.com/dreikanter/notescli/releases/tag/v0.1.17
