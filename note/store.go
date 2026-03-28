@@ -168,6 +168,17 @@ func hasAllTags(noteTags []string, required []string) bool {
 	return true
 }
 
+// FilterByDate returns notes whose Date field matches the given YYYYMMDD string.
+func FilterByDate(notes []Note, date string) []Note {
+	var results []Note
+	for _, n := range notes {
+		if n.Date == date {
+			results = append(results, n)
+		}
+	}
+	return results
+}
+
 // FilterBySlug returns notes with an exact slug match.
 func FilterBySlug(notes []Note, slug string) []Note {
 	return FilterBySlugs(notes, []string{slug})
