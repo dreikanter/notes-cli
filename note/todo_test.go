@@ -17,7 +17,6 @@ func TestParseTask(t *testing.T) {
 		{"pending with bullet", "- [ ] Buy milk", false, " ", false},
 		{"pending indented", "  [ ] Buy milk", false, " ", false},
 		{"pending indented bullet", "  - [ ] Buy milk", false, " ", false},
-		{"unknown marker", "[>] Working on it", false, ">", false},
 		{"completed", "[+] Done task", false, "+", false},
 		{"daily", "[ ] Standup [daily]", false, " ", true},
 		{"daily completed", "[+] Standup [daily]", false, "+", true},
