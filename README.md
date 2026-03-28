@@ -37,7 +37,7 @@ notes ls --tag work --tag meeting  # multiple --tag flags are ANDed; all flags c
 notes ls --tag work --type todo
 notes ls --name 2026
 
-# Read a note by ID, slug, or filename
+# Note references: any command accepting a note ref resolves by ID, slug, basename, or full path
 notes read 8823
 notes read meeting
 notes read 20260106_8823.md
