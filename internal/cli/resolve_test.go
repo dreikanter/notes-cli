@@ -10,13 +10,14 @@ import (
 func runResolve(t *testing.T, root string, args ...string) (string, error) {
 	t.Helper()
 
-	buf := new(bytes.Buffer)
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(buf)
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	rootCmd.SetOut(stdout)
+	rootCmd.SetErr(stderr)
 	rootCmd.SetArgs(append([]string{"resolve", "--path", root}, args...))
 
 	err := rootCmd.Execute()
-	return strings.TrimSpace(buf.String()), err
+	return strings.TrimSpace(stdout.String()), err
 }
 
 func TestResolveByID(t *testing.T) {
