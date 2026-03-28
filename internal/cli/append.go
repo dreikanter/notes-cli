@@ -12,7 +12,7 @@ import (
 )
 
 var appendCmd = &cobra.Command{
-	Use:   "append [<id|slug|filename|path>]",
+	Use:   "append [<id|path|basename|slug|type>]",
 	Short: "Append text from stdin to a note, optionally creating it",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -66,22 +66,11 @@ var appendCmd = &cobra.Command{
 				return fmt.Errorf("cannot combine positional argument with filter flags")
 			}
 
-			if strings.Contains(args[0], "/") {
-				targetPath, err = resolveFilePath(args[0], root)
-				if err != nil {
-					return err
-				}
-			} else {
-				notes, scanErr := note.Scan(root)
-				if scanErr != nil {
-					return scanErr
-				}
-				n := note.Resolve(notes, args[0])
-				if n == nil {
-					return fmt.Errorf("note not found: %s", args[0])
-				}
-				targetPath = filepath.Join(root, n.RelPath)
+			n, resolveErr := note.ResolveRef(root, args[0])
+			if resolveErr != nil {
+				return resolveErr
 			}
+			targetPath = filepath.Join(root, n.RelPath)
 		} else if hasFilters {
 			notes, scanErr := note.Scan(root)
 			if scanErr != nil {
@@ -144,28 +133,6 @@ var appendCmd = &cobra.Command{
 		fmt.Fprintln(cmd.OutOrStdout(), targetPath)
 		return nil
 	},
-}
-
-func resolveFilePath(arg, root string) (string, error) {
-	absPath, err := filepath.Abs(arg)
-	if err != nil {
-		return "", fmt.Errorf("cannot resolve path: %w", err)
-	}
-	absPath, err = filepath.EvalSymlinks(absPath)
-	if err != nil {
-		return "", fmt.Errorf("note not found: %s", arg)
-	}
-
-	absRoot, err := filepath.EvalSymlinks(root)
-	if err != nil {
-		return "", fmt.Errorf("cannot resolve notes path: %w", err)
-	}
-
-	if !strings.HasPrefix(absPath, absRoot+"/") {
-		return "", fmt.Errorf("path is outside notes directory: %s", arg)
-	}
-
-	return absPath, nil
 }
 
 func init() {

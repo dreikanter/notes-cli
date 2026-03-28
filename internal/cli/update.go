@@ -30,14 +30,9 @@ var updateCmd = &cobra.Command{
 		}
 
 		root := mustNotesPath()
-		notes, err := note.Scan(root)
+		n, err := note.ResolveRef(root, args[0])
 		if err != nil {
 			return err
-		}
-
-		n := note.Resolve(notes, args[0])
-		if n == nil {
-			return fmt.Errorf("note not found: %s", args[0])
 		}
 
 		oldPath := filepath.Join(root, n.RelPath)

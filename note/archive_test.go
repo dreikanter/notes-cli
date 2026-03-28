@@ -62,42 +62,42 @@ func TestScanSkipsInvalidFiles(t *testing.T) {
 	}
 }
 
-func TestResolve(t *testing.T) {
-	notes := []Note{
-		{RelPath: "2026/01/20260106_8823.md", ID: "8823", Slug: "", Type: "", BaseName: "20260106_8823"},
-		{RelPath: "2026/01/20260102_8814.todo.md", ID: "8814", Slug: "", Type: "todo", BaseName: "20260102_8814"},
-		{RelPath: "2024/12/20241203_6973_disable-letter_opener.md", ID: "6973", Slug: "disable-letter_opener", Type: "", BaseName: "20241203_6973_disable-letter_opener"},
-	}
+func TestResolveRef(t *testing.T) {
+	root := testdataPath(t)
+	absPath := filepath.Join(root, "2026/01/20260106_8823.md")
 
 	tests := []struct {
-		name   string
-		query  string
-		wantID string
+		name    string
+		query   string
+		wantID  string
+		wantErr bool
 	}{
-		{"by id", "8823", "8823"},
-		{"by id second", "6973", "6973"},
-		{"by slug with special chars", "disable-letter_opener", "6973"},
-		{"by type", "todo", "8814"},
-		{"by basename", "20260106_8823", "8823"},
-		{"by basename with md", "20260106_8823.md", "8823"},
-		{"not found", "9999", ""},
-		{"empty query", "", ""},
+		{"by id", "8823", "8823", false},
+		{"by id todo", "8814", "8814", false},
+		{"by type todo", "todo", "8814", false},
+		{"by slug", "disable-letter_opener", "6973", false},
+		{"by basename", "20260106_8823", "8823", false},
+		{"by basename with md", "20260106_8823.md", "8823", false},
+		{"by absolute path", absPath, "8823", false},
+		{"not found id", "9999", "", true},
+		{"not found slug", "nonexistent", "", true},
+		{"path outside root", "/tmp", "", true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := Resolve(notes, tt.query)
-			if tt.wantID == "" {
-				if got != nil {
-					t.Errorf("Resolve(%q) = %v, want nil", tt.query, got)
+			got, err := ResolveRef(root, tt.query)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ResolveRef(%q) expected error, got nil", tt.query)
 				}
 				return
 			}
-			if got == nil {
-				t.Fatalf("Resolve(%q) = nil, want ID %q", tt.query, tt.wantID)
+			if err != nil {
+				t.Fatalf("ResolveRef(%q) unexpected error: %v", tt.query, err)
 			}
 			if got.ID != tt.wantID {
-				t.Errorf("Resolve(%q).ID = %q, want %q", tt.query, got.ID, tt.wantID)
+				t.Errorf("ResolveRef(%q).ID = %q, want %q", tt.query, got.ID, tt.wantID)
 			}
 		})
 	}

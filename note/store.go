@@ -1,6 +1,7 @@
 package note
 
 import (
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -49,41 +50,81 @@ func Scan(root string) ([]Note, error) {
 	return notes, nil
 }
 
-// Resolve finds a single note matching the query by ID, slug, type, or base filename.
-// Returns the first (most recent) match, or nil if not found.
-func Resolve(notes []Note, query string) *Note {
-	// Strip .md extension if provided
-	query = strings.TrimSuffix(query, ".md")
+// ResolveRef resolves a note reference to a Note using the following priority:
+//  1. Numeric ID
+//  2. Absolute or relative path (must exist and be under root)
+//  3. Basename (exact filename without .md extension)
+//  4. Slug
+//  5. Type — most recent note of that type (e.g. "todo", "backlog", "weekly")
+func ResolveRef(root, query string) (*Note, error) {
+	notes, err := Scan(root)
+	if err != nil {
+		return nil, err
+	}
 
-	// Try exact ID match first
+	// Step 1: numeric ID
+	if query != "" && isDigits(query) {
+		for i := range notes {
+			if notes[i].ID == query {
+				return &notes[i], nil
+			}
+		}
+		return nil, fmt.Errorf("note not found: %s", query)
+	}
+
+	// Step 2: absolute or relative path
+	if strings.ContainsRune(query, filepath.Separator) {
+		absPath, err := filepath.Abs(query)
+		if err != nil {
+			return nil, fmt.Errorf("cannot resolve path: %w", err)
+		}
+		absRoot, err := filepath.EvalSymlinks(root)
+		if err != nil {
+			return nil, fmt.Errorf("cannot resolve notes path: %w", err)
+		}
+		absPathResolved, err := filepath.EvalSymlinks(absPath)
+		if err != nil {
+			return nil, fmt.Errorf("note not found: %s", query)
+		}
+		if !strings.HasPrefix(absPathResolved, absRoot+string(filepath.Separator)) {
+			return nil, fmt.Errorf("path is outside notes directory: %s", query)
+		}
+		rel, err := filepath.Rel(absRoot, absPathResolved)
+		if err != nil {
+			return nil, fmt.Errorf("cannot compute relative path: %w", err)
+		}
+		for i := range notes {
+			if notes[i].RelPath == rel {
+				return &notes[i], nil
+			}
+		}
+		return nil, fmt.Errorf("note not found: %s", query)
+	}
+
+	stripped := strings.TrimSuffix(query, ".md")
+
+	// Step 3: basename
 	for i := range notes {
-		if notes[i].ID == query {
-			return &notes[i]
+		if notes[i].BaseName == stripped {
+			return &notes[i], nil
 		}
 	}
 
-	// Try exact slug match
+	// Step 4: slug
 	for i := range notes {
 		if notes[i].Slug != "" && notes[i].Slug == query {
-			return &notes[i]
+			return &notes[i], nil
 		}
 	}
 
-	// Try exact type match
+	// Step 5: type — most recent match
 	for i := range notes {
 		if notes[i].Type != "" && notes[i].Type == query {
-			return &notes[i]
+			return &notes[i], nil
 		}
 	}
 
-	// Try exact base filename match
-	for i := range notes {
-		if notes[i].BaseName == query {
-			return &notes[i]
-		}
-	}
-
-	return nil
+	return nil, fmt.Errorf("note not found: %s", query)
 }
 
 // Filter returns all notes whose filename contains the fragment (case-insensitive).

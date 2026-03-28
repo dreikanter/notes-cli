@@ -98,10 +98,8 @@ func TestAppendByAbsolutePath(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// EvalSymlinks may resolve /var → /private/var on macOS
-	resolved, _ := filepath.EvalSymlinks(target)
-	if out != resolved {
-		t.Errorf("got output %q, want %q", out, resolved)
+	if out != target {
+		t.Errorf("got output %q, want %q", out, target)
 	}
 
 	data, _ := os.ReadFile(target)
@@ -128,9 +126,9 @@ func TestAppendByRelativePath(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	resolved, _ := filepath.EvalSymlinks(filepath.Join(root, "2026/01/20260106_8823.md"))
-	if out != resolved {
-		t.Errorf("got output %q, want %q", out, resolved)
+	want := filepath.Join(root, "2026/01/20260106_8823.md")
+	if out != want {
+		t.Errorf("got output %q, want %q", out, want)
 	}
 
 	data, _ := os.ReadFile(filepath.Join(root, "2026/01/20260106_8823.md"))

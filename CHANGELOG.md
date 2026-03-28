@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.1.27] - 2026-03-28
 
 ### Added
 
@@ -11,6 +11,7 @@
 ### Changed
 
 - Migrate `new`, `ls`, `new-todo`, and `update` flag bindings from package-level vars to `GetString`/`GetBool` (Pattern B) for cleaner test isolation ([#39])
+- Unify note ref resolution across `read`, `append`, and `update` via a single `note.ResolveRef` function: accepts numeric ID, absolute/relative path, basename, slug, or type name ([#40])
 
 ### Removed
 
