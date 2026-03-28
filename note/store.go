@@ -73,7 +73,7 @@ func ResolveRef(root, query string) (*Note, error) {
 	}
 
 	// Step 2: absolute or relative path
-	if strings.ContainsRune(query, filepath.Separator) || strings.HasPrefix(query, ".") {
+	if strings.ContainsRune(query, filepath.Separator) {
 		absPath, err := filepath.Abs(query)
 		if err != nil {
 			return nil, fmt.Errorf("cannot resolve path: %w", err)
