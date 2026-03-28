@@ -8,6 +8,10 @@
 - Add `update` command for updating frontmatter and renaming notes ([#34])
 - Add `--name` flag to `ls` for case-insensitive substring search on note filenames
 
+### Changed
+
+- Migrate `new`, `ls`, `new-todo`, and `update` flag bindings from package-level vars to `GetString`/`GetBool` (Pattern B) for cleaner test isolation ([#35])
+
 ### Removed
 
 - Remove `filter` command (superseded by `ls --name`)
