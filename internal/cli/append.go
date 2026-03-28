@@ -12,7 +12,7 @@ import (
 )
 
 var appendCmd = &cobra.Command{
-	Use:   "append [<id|slug|filename|path>]",
+	Use:   "append [<id|path|basename|slug|type>]",
 	Short: "Append text from stdin to a note, optionally creating it",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
