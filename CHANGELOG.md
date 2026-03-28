@@ -4,7 +4,7 @@
 
 ### Added
 
-- Add tests for `resolve` command ([#45])
+- Add tests for `resolve` command, use `cmd.OutOrStdout()` in `read`, and minor test cleanup ([#45])
 
 [#45]: https://github.com/dreikanter/notescli/pull/45
 
