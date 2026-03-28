@@ -33,3 +33,7 @@ Run `make lint` before committing or creating a PR to catch issues early.
 
 - One logical change per commit (atomic commits)
 - Commit message: one short line, no body
+
+## Pull Requests
+
+Use `.github/pull_request_template.md` for all PR bodies. When running `gh pr create`, pass its content via `--body`.

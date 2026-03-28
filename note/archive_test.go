@@ -195,6 +195,30 @@ func TestFilterBySlug(t *testing.T) {
 	}
 }
 
+func TestFilterByDate(t *testing.T) {
+	notes := []Note{
+		{Date: "20260106", ID: "8823"},
+		{Date: "20260104", ID: "8818"},
+		{Date: "20260102", ID: "8814"},
+		{Date: "20241203", ID: "6973"},
+	}
+
+	got := FilterByDate(notes, "20260106")
+	if len(got) != 1 || got[0].ID != "8823" {
+		t.Errorf("FilterByDate(20260106) = %v, want [{ID:8823}]", got)
+	}
+
+	got = FilterByDate(notes, "20260104")
+	if len(got) != 1 || got[0].ID != "8818" {
+		t.Errorf("FilterByDate(20260104) = %v, want [{ID:8818}]", got)
+	}
+
+	got = FilterByDate(notes, "20991231")
+	if len(got) != 0 {
+		t.Errorf("FilterByDate(no match) = %v, want []", got)
+	}
+}
+
 func TestFilterByType(t *testing.T) {
 	notes := []Note{
 		{Type: ""},
