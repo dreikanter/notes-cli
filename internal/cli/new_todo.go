@@ -29,7 +29,7 @@ var newTodoCmd = &cobra.Command{
 		// Check if today's todo already exists
 		if !force {
 			if existing := note.FindTodayTodo(notes, today); existing != nil {
-				fmt.Println(filepath.Join(root, existing.RelPath))
+				fmt.Fprintln(cmd.OutOrStdout(), filepath.Join(root, existing.RelPath))
 				return nil
 			}
 		}
@@ -75,7 +75,7 @@ var newTodoCmd = &cobra.Command{
 			return fmt.Errorf("cannot write todo: %w", err)
 		}
 
-		fmt.Println(fullPath)
+		fmt.Fprintln(cmd.OutOrStdout(), fullPath)
 		return nil
 	},
 }
