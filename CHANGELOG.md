@@ -6,6 +6,7 @@
 
 - Add `append` command for appending stdin text to existing notes ([#30])
 - Add `update` command for updating frontmatter and renaming notes ([#34])
+- Add `--name` flag to `ls` for case-insensitive substring search on note filenames
 
 ## [0.1.23] - 2026-03-24
 
