@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 
@@ -10,19 +9,14 @@ import (
 )
 
 var readCmd = &cobra.Command{
-	Use:   "read <id|slug|filename>",
-	Short: "Read a note by ID, slug, or filename",
+	Use:   "read <id|path|basename|slug|type>",
+	Short: "Read a note by ID, path, basename, slug, or type",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		root := mustNotesPath()
-		notes, err := note.Scan(root)
+		n, err := note.ResolveRef(root, args[0])
 		if err != nil {
 			return err
-		}
-
-		n := note.Resolve(notes, args[0])
-		if n == nil {
-			return fmt.Errorf("note not found: %s", args[0])
 		}
 
 		data, err := os.ReadFile(filepath.Join(root, n.RelPath))

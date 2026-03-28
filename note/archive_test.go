@@ -103,6 +103,51 @@ func TestResolve(t *testing.T) {
 	}
 }
 
+func TestResolveRef(t *testing.T) {
+	root := testdataPath(t)
+
+	tests := []struct {
+		name    string
+		query   string
+		wantID  string
+		wantErr bool
+	}{
+		{"by id", "8823", "8823", false},
+		{"by id todo", "8814", "8814", false},
+		{"by type todo", "todo", "8814", false},
+		{"by slug", "disable-letter_opener", "6973", false},
+		{"by basename", "20260106_8823", "8823", false},
+		{"by basename with md", "20260106_8823.md", "8823", false},
+		{"by absolute path", "", "8823", false}, // set in test body
+		{"not found id", "9999", "", true},
+		{"not found slug", "nonexistent", "", true},
+		{"path outside root", "/tmp", "", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			query := tt.query
+			if tt.name == "by absolute path" {
+				query = filepath.Join(root, "2026/01/20260106_8823.md")
+			}
+
+			got, err := ResolveRef(root, query)
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("ResolveRef(%q) expected error, got nil", query)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ResolveRef(%q) unexpected error: %v", query, err)
+			}
+			if got.ID != tt.wantID {
+				t.Errorf("ResolveRef(%q).ID = %q, want %q", query, got.ID, tt.wantID)
+			}
+		})
+	}
+}
+
 func TestFilter(t *testing.T) {
 	notes := []Note{
 		{RelPath: "2026/01/20260106_8823.md", BaseName: "20260106_8823", Type: ""},
