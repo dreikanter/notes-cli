@@ -4,6 +4,79 @@ import (
 	"testing"
 )
 
+func TestParseFrontmatterFields(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  FrontmatterFields
+	}{
+		{
+			name:  "empty input",
+			input: "",
+			want:  FrontmatterFields{},
+		},
+		{
+			name:  "no frontmatter",
+			input: "# Hello\n\nBody text.\n",
+			want:  FrontmatterFields{},
+		},
+		{
+			name:  "title only",
+			input: "---\ntitle: My Note\n---\n\n# Content\n",
+			want:  FrontmatterFields{Title: "My Note"},
+		},
+		{
+			name:  "tags only",
+			input: "---\ntags: [work, planning]\n---\n\n# Content\n",
+			want:  FrontmatterFields{Tags: []string{"work", "planning"}},
+		},
+		{
+			name:  "description only",
+			input: "---\ndescription: Quick thought\n---\n\n# Content\n",
+			want:  FrontmatterFields{Description: "Quick thought"},
+		},
+		{
+			name:  "all fields",
+			input: "---\ntitle: Weekly Review\ntags: [review, work]\ndescription: Week 10\n---\n\n# Content\n",
+			want: FrontmatterFields{
+				Title:       "Weekly Review",
+				Tags:        []string{"review", "work"},
+				Description: "Week 10",
+			},
+		},
+		{
+			name:  "unclosed frontmatter",
+			input: "---\ntitle: Oops\n# Content\n",
+			want:  FrontmatterFields{},
+		},
+		{
+			name:  "roundtrip with BuildFrontmatter",
+			input: BuildFrontmatter(FrontmatterFields{Title: "T", Tags: []string{"a", "b"}, Description: "D"}) + "body\n",
+			want:  FrontmatterFields{Title: "T", Tags: []string{"a", "b"}, Description: "D"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ParseFrontmatterFields([]byte(tt.input))
+			if got.Title != tt.want.Title {
+				t.Errorf("Title = %q, want %q", got.Title, tt.want.Title)
+			}
+			if got.Description != tt.want.Description {
+				t.Errorf("Description = %q, want %q", got.Description, tt.want.Description)
+			}
+			if len(got.Tags) != len(tt.want.Tags) {
+				t.Fatalf("Tags = %v, want %v", got.Tags, tt.want.Tags)
+			}
+			for i := range tt.want.Tags {
+				if got.Tags[i] != tt.want.Tags[i] {
+					t.Errorf("Tags[%d] = %q, want %q", i, got.Tags[i], tt.want.Tags[i])
+				}
+			}
+		})
+	}
+}
+
 func TestBuildFrontmatter(t *testing.T) {
 	tests := []struct {
 		name   string
@@ -50,80 +123,6 @@ func TestBuildFrontmatter(t *testing.T) {
 			got := BuildFrontmatter(tt.fields)
 			if got != tt.want {
 				t.Errorf("BuildFrontmatter(%+v) =\n%q\nwant:\n%q", tt.fields, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestParseTags(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-		want  []string
-	}{
-		{
-			name:  "multiple tags",
-			input: "---\ntags: [work, planning]\n---\n\n# Note\n",
-			want:  []string{"work", "planning"},
-		},
-		{
-			name:  "single tag",
-			input: "---\ntags: [journal]\n---\n\n# Note\n",
-			want:  []string{"journal"},
-		},
-		{
-			name:  "no frontmatter",
-			input: "# Hello\n\nBody text.\n",
-			want:  nil,
-		},
-		{
-			name:  "frontmatter without tags",
-			input: "---\ntitle: My Note\n---\n\n# Note\n",
-			want:  nil,
-		},
-		{
-			name:  "empty tags",
-			input: "---\ntags: []\n---\n\n# Note\n",
-			want:  nil,
-		},
-		{
-			name:  "tags with other fields",
-			input: "---\ntitle: Weekly Review\ntags: [review, work]\ndescription: Week 10\n---\n\n# Note\n",
-			want:  []string{"review", "work"},
-		},
-		{
-			name:  "roundtrip with BuildFrontmatter",
-			input: BuildFrontmatter(FrontmatterFields{Tags: []string{"x", "y"}}) + "# Content\n",
-			want:  []string{"x", "y"},
-		},
-		{
-			name:  "empty input",
-			input: "",
-			want:  nil,
-		},
-		{
-			name:  "unclosed frontmatter",
-			input: "---\ntags: [a]\n# Hello\n",
-			want:  nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := ParseTags([]byte(tt.input))
-			if tt.want == nil {
-				if got != nil {
-					t.Errorf("ParseTags(%q) = %v, want nil", tt.input, got)
-				}
-				return
-			}
-			if len(got) != len(tt.want) {
-				t.Fatalf("ParseTags(%q) = %v, want %v", tt.input, got, tt.want)
-			}
-			for i := range tt.want {
-				if got[i] != tt.want[i] {
-					t.Errorf("ParseTags(%q)[%d] = %q, want %q", tt.input, i, got[i], tt.want[i])
-				}
 			}
 		})
 	}
