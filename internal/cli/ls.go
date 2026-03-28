@@ -12,6 +12,7 @@ var (
 	lsType  string
 	lsSlug  string
 	lsTags  []string
+	lsName  string
 )
 
 var lsCmd = &cobra.Command{
@@ -23,6 +24,10 @@ var lsCmd = &cobra.Command{
 		notes, err := note.Scan(root)
 		if err != nil {
 			return err
+		}
+
+		if lsName != "" {
+			notes = note.Filter(notes, lsName)
 		}
 
 		if lsType != "" {
@@ -56,5 +61,6 @@ func init() {
 	lsCmd.Flags().StringVar(&lsType, "type", "", "filter by note type, e.g. todo, backlog, weekly")
 	lsCmd.Flags().StringVar(&lsSlug, "slug", "", "filter by descriptive slug")
 	lsCmd.Flags().StringSliceVar(&lsTags, "tag", nil, "filter by frontmatter tag (repeatable, AND logic)")
+	lsCmd.Flags().StringVar(&lsName, "name", "", "filter by filename fragment (case-insensitive substring)")
 	rootCmd.AddCommand(lsCmd)
 }

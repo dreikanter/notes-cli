@@ -15,6 +15,7 @@ func runLs(t *testing.T, args ...string) (string, error) {
 	lsTags = nil
 	lsType = ""
 	lsSlug = ""
+	lsName = ""
 	lsLimit = 20
 	lsCmd.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
 
@@ -129,5 +130,46 @@ func TestLsTagAndTypeNoOverlap(t *testing.T) {
 
 	if out != "" {
 		t.Errorf("expected empty output (no todo with meeting tag), got %q", out)
+	}
+}
+
+func TestLsWithName(t *testing.T) {
+	out, err := runLs(t, "--name", "meeting")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	lines := strings.Split(out, "\n")
+	if len(lines) != 1 {
+		t.Fatalf("got %d lines, want 1:\n%s", len(lines), out)
+	}
+	if !strings.Contains(lines[0], "meeting") {
+		t.Errorf("expected meeting note, got %q", lines[0])
+	}
+}
+
+func TestLsNameNoMatch(t *testing.T) {
+	out, err := runLs(t, "--name", "nonexistent")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if out != "" {
+		t.Errorf("expected empty output, got %q", out)
+	}
+}
+
+func TestLsNameAndType(t *testing.T) {
+	out, err := runLs(t, "--name", "8814", "--type", "todo")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	lines := strings.Split(out, "\n")
+	if len(lines) != 1 {
+		t.Fatalf("got %d lines, want 1:\n%s", len(lines), out)
+	}
+	if !strings.Contains(lines[0], "8814") {
+		t.Errorf("expected note 8814, got %q", lines[0])
 	}
 }
