@@ -4,20 +4,18 @@ import (
 	"bytes"
 	"strings"
 	"testing"
-
-	"github.com/spf13/pflag"
 )
 
 func runLs(t *testing.T, args ...string) (string, error) {
 	t.Helper()
 
 	root := testdataPath(t)
-	lsTags = nil
-	lsType = ""
-	lsSlug = ""
-	lsName = ""
-	lsLimit = 20
-	lsCmd.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
+	lsCmd.ResetFlags()
+	lsCmd.Flags().Int("limit", 20, "maximum number of notes to list")
+	lsCmd.Flags().String("type", "", "filter by note type, e.g. todo, backlog, weekly")
+	lsCmd.Flags().String("slug", "", "filter by descriptive slug")
+	lsCmd.Flags().StringSlice("tag", nil, "filter by frontmatter tag (repeatable, AND logic)")
+	lsCmd.Flags().String("name", "", "filter by filename fragment (case-insensitive substring)")
 
 	buf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
