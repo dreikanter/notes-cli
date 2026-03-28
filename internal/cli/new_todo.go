@@ -11,13 +11,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var newTodoForce bool
-
 var newTodoCmd = &cobra.Command{
 	Use:   "new-todo",
 	Short: "Create today's todo from the previous todo",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		force, _ := cmd.Flags().GetBool("force")
+
 		root := mustNotesPath()
 		today := time.Now().Format("20060102")
 
@@ -27,7 +27,7 @@ var newTodoCmd = &cobra.Command{
 		}
 
 		// Check if today's todo already exists
-		if !newTodoForce {
+		if !force {
 			if existing := note.FindTodayTodo(notes, today); existing != nil {
 				fmt.Println(filepath.Join(root, existing.RelPath))
 				return nil
@@ -81,6 +81,6 @@ var newTodoCmd = &cobra.Command{
 }
 
 func init() {
-	newTodoCmd.Flags().BoolVar(&newTodoForce, "force", false, "regenerate today's todo even if it exists")
+	newTodoCmd.Flags().Bool("force", false, "regenerate today's todo even if it exists")
 	rootCmd.AddCommand(newTodoCmd)
 }
