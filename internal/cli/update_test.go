@@ -6,22 +6,20 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/spf13/pflag"
 )
 
 func runUpdate(t *testing.T, root string, args ...string) (string, error) {
 	t.Helper()
 
-	updateNoTags = false
-	updateNoSlug = false
-	updateNoType = false
-	updateTags = nil
-	updateSlug = ""
-	updateType = ""
-	updateTitle = ""
-	updateDescription = ""
-	updateCmd.Flags().VisitAll(func(f *pflag.Flag) { f.Changed = false })
+	updateCmd.ResetFlags()
+	updateCmd.Flags().StringSlice("tag", nil, "tag for frontmatter (repeatable); replaces existing tags")
+	updateCmd.Flags().Bool("no-tags", false, "remove all tags from frontmatter")
+	updateCmd.Flags().String("title", "", "title for frontmatter (empty string clears it)")
+	updateCmd.Flags().String("description", "", "description for frontmatter (empty string clears it)")
+	updateCmd.Flags().String("slug", "", "update slug and rename file")
+	updateCmd.Flags().Bool("no-slug", false, "remove slug from filename")
+	updateCmd.Flags().String("type", "", "update note type and rename file (todo, backlog, weekly)")
+	updateCmd.Flags().Bool("no-type", false, "remove type suffix from filename")
 
 	buf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)

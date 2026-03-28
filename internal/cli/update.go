@@ -11,22 +11,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	updateTags        []string
-	updateNoTags      bool
-	updateTitle       string
-	updateDescription string
-	updateSlug        string
-	updateNoSlug      bool
-	updateType        string
-	updateNoType      bool
-)
-
 var updateCmd = &cobra.Command{
 	Use:   "update <ref>",
 	Short: "Update frontmatter and/or rename a note",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		updateTags, _ := cmd.Flags().GetStringSlice("tag")
+		updateNoTags, _ := cmd.Flags().GetBool("no-tags")
+		updateTitle, _ := cmd.Flags().GetString("title")
+		updateDescription, _ := cmd.Flags().GetString("description")
+		updateSlug, _ := cmd.Flags().GetString("slug")
+		updateNoSlug, _ := cmd.Flags().GetBool("no-slug")
+		updateType, _ := cmd.Flags().GetString("type")
+		updateNoType, _ := cmd.Flags().GetBool("no-type")
+
 		if updateType != "" && !note.IsKnownType(updateType) {
 			return fmt.Errorf("unknown note type %q (valid types: %s)", updateType, strings.Join(note.KnownTypes, ", "))
 		}
@@ -111,13 +109,13 @@ var updateCmd = &cobra.Command{
 }
 
 func init() {
-	updateCmd.Flags().StringArrayVar(&updateTags, "tag", nil, "tag for frontmatter (repeatable); replaces existing tags")
-	updateCmd.Flags().BoolVar(&updateNoTags, "no-tags", false, "remove all tags from frontmatter")
-	updateCmd.Flags().StringVar(&updateTitle, "title", "", "title for frontmatter (empty string clears it)")
-	updateCmd.Flags().StringVar(&updateDescription, "description", "", "description for frontmatter (empty string clears it)")
-	updateCmd.Flags().StringVar(&updateSlug, "slug", "", "update slug and rename file")
-	updateCmd.Flags().BoolVar(&updateNoSlug, "no-slug", false, "remove slug from filename")
-	updateCmd.Flags().StringVar(&updateType, "type", "", "update note type and rename file (todo, backlog, weekly)")
-	updateCmd.Flags().BoolVar(&updateNoType, "no-type", false, "remove type suffix from filename")
+	updateCmd.Flags().StringSlice("tag", nil, "tag for frontmatter (repeatable); replaces existing tags")
+	updateCmd.Flags().Bool("no-tags", false, "remove all tags from frontmatter")
+	updateCmd.Flags().String("title", "", "title for frontmatter (empty string clears it)")
+	updateCmd.Flags().String("description", "", "description for frontmatter (empty string clears it)")
+	updateCmd.Flags().String("slug", "", "update slug and rename file")
+	updateCmd.Flags().Bool("no-slug", false, "remove slug from filename")
+	updateCmd.Flags().String("type", "", "update note type and rename file (todo, backlog, weekly)")
+	updateCmd.Flags().Bool("no-type", false, "remove type suffix from filename")
 	rootCmd.AddCommand(updateCmd)
 }

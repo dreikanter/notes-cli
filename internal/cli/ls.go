@@ -7,19 +7,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-	lsLimit int
-	lsType  string
-	lsSlug  string
-	lsTags  []string
-	lsName  string
-)
-
 var lsCmd = &cobra.Command{
 	Use:   "ls",
 	Short: "List recent notes",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		lsLimit, _ := cmd.Flags().GetInt("limit")
+		lsType, _ := cmd.Flags().GetString("type")
+		lsSlug, _ := cmd.Flags().GetString("slug")
+		lsTags, _ := cmd.Flags().GetStringSlice("tag")
+		lsName, _ := cmd.Flags().GetString("name")
+
 		root := mustNotesPath()
 		notes, err := note.Scan(root)
 		if err != nil {
@@ -57,10 +55,10 @@ var lsCmd = &cobra.Command{
 }
 
 func init() {
-	lsCmd.Flags().IntVar(&lsLimit, "limit", 20, "maximum number of notes to list")
-	lsCmd.Flags().StringVar(&lsType, "type", "", "filter by note type, e.g. todo, backlog, weekly")
-	lsCmd.Flags().StringVar(&lsSlug, "slug", "", "filter by descriptive slug")
-	lsCmd.Flags().StringSliceVar(&lsTags, "tag", nil, "filter by frontmatter tag (repeatable, AND logic)")
-	lsCmd.Flags().StringVar(&lsName, "name", "", "filter by filename fragment (case-insensitive substring)")
+	lsCmd.Flags().Int("limit", 20, "maximum number of notes to list")
+	lsCmd.Flags().String("type", "", "filter by note type, e.g. todo, backlog, weekly")
+	lsCmd.Flags().String("slug", "", "filter by descriptive slug")
+	lsCmd.Flags().StringSlice("tag", nil, "filter by frontmatter tag (repeatable, AND logic)")
+	lsCmd.Flags().String("name", "", "filter by filename fragment (case-insensitive substring)")
 	rootCmd.AddCommand(lsCmd)
 }
