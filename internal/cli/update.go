@@ -82,10 +82,8 @@ var updateCmd = &cobra.Command{
 			newType = updateType
 		}
 
-		id, err := strconv.Atoi(n.ID)
-		if err != nil {
-			return fmt.Errorf("invalid note id %q: %w", n.ID, err)
-		}
+		// n.ID is guaranteed to be a non-empty digit string by ParseFilename.
+		id, _ := strconv.Atoi(n.ID)
 
 		newFilename := note.NoteFilename(n.Date, id, newSlug, newType)
 		dir := filepath.Dir(oldPath)

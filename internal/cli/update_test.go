@@ -231,6 +231,36 @@ func TestUpdateInvalidTypeErrors(t *testing.T) {
 	}
 }
 
+// TestUpdateNoSlugTakesPrecedenceOverSlug verifies --no-slug wins when combined with --slug.
+func TestUpdateNoSlugTakesPrecedenceOverSlug(t *testing.T) {
+	root := copyTestdata(t)
+	// 8818 already has slug "meeting"; pass both --slug and --no-slug
+	out, err := runUpdate(t, root, "8818", "--slug", "other", "--no-slug")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	want := filepath.Join(root, "2026/01/20260104_8818.md")
+	if out != want {
+		t.Errorf("got path %q, want %q (--no-slug should win)", out, want)
+	}
+}
+
+// TestUpdateNoTypeTakesPrecedenceOverType verifies --no-type wins when combined with --type.
+func TestUpdateNoTypeTakesPrecedenceOverType(t *testing.T) {
+	root := copyTestdata(t)
+	// 8814 has type "todo"; pass both --type backlog and --no-type
+	out, err := runUpdate(t, root, "8814", "--type", "backlog", "--no-type")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	want := filepath.Join(root, "2026/01/20260102_8814.md")
+	if out != want {
+		t.Errorf("got path %q, want %q (--no-type should win)", out, want)
+	}
+}
+
 // TestUpdateBodyPreserved ensures note body is preserved after frontmatter update.
 func TestUpdateBodyPreserved(t *testing.T) {
 	root := copyTestdata(t)
