@@ -29,7 +29,7 @@ var readCmd = &cobra.Command{
 			data = note.StripFrontmatter(data)
 		}
 
-		_, err = os.Stdout.Write(data)
+		_, err = cmd.OutOrStdout().Write(data)
 		return err
 	},
 }

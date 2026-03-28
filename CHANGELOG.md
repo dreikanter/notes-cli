@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.35] - 2026-03-28
+
+### Added
+
+- Add tests for `resolve` command, use `cmd.OutOrStdout()` in `read`, and minor test cleanup ([#45])
+
+[#45]: https://github.com/dreikanter/notescli/pull/45
+
 ## [0.1.34] - 2026-03-28
 
 ### Added
