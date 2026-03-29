@@ -41,6 +41,7 @@ func createNote(p createNoteParams) (string, error) {
 
 	content := note.BuildFrontmatter(note.FrontmatterFields{
 		Title:       p.Title,
+		Slug:        p.Slug,
 		Tags:        p.Tags,
 		Description: p.Description,
 	})

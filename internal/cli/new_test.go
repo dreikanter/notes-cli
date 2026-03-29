@@ -65,6 +65,13 @@ func TestNewWithSlug(t *testing.T) {
 	if !strings.Contains(filepath.Base(out), "_myslug") {
 		t.Errorf("expected slug in filename, got %q", filepath.Base(out))
 	}
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("read note: %v", err)
+	}
+	if !strings.Contains(string(data), "slug: myslug") {
+		t.Errorf("expected slug in frontmatter, got:\n%s", string(data))
+	}
 }
 
 func TestNewWithType(t *testing.T) {
