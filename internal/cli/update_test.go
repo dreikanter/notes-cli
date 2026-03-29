@@ -282,7 +282,10 @@ func TestUpdateSlugSyncsToFrontmatter(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	data, _ := os.ReadFile(out)
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("read note: %v", err)
+	}
 	if !strings.Contains(string(data), "slug: new-slug") {
 		t.Errorf("expected slug in frontmatter, got:\n%s", string(data))
 	}
@@ -302,7 +305,10 @@ func TestUpdateNoSlugRemovesSlugFromFrontmatter(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	data, _ := os.ReadFile(out)
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("read note: %v", err)
+	}
 	if strings.Contains(string(data), "slug:") {
 		t.Errorf("expected slug removed from frontmatter, got:\n%s", string(data))
 	}
@@ -322,7 +328,10 @@ func TestUpdateNoFlagDoesNotTouchFrontmatterSlug(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	data, _ := os.ReadFile(out)
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("read note: %v", err)
+	}
 	if !strings.Contains(string(data), "slug: keep-me") {
 		t.Errorf("expected slug frontmatter to be preserved, got:\n%s", string(data))
 	}
