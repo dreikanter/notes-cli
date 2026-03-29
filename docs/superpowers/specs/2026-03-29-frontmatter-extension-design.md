@@ -1,18 +1,25 @@
-# notescli Frontmatter Extension Design
+# notescli Frontmatter Refactor Design
 
 Date: 2026-03-29
 
 ## Context
 
-`notescli/note` is the canonical source of note-format knowledge, shared with `notespub` as a Go module dependency. Currently `ParseFrontmatterFields` returns a limited `FrontmatterFields` struct covering only `title`, `tags`, and `description`. The `notespub` site builder needs access to additional fields (`public`, `slug`) and potentially arbitrary frontmatter keys — without duplicating parsing logic.
+`notescli/note` is the canonical source of note-format knowledge, shared with `notespub` as a Go module dependency. Currently all YAML frontmatter handling is hand-rolled:
+
+- `ParseFrontmatterFields` — line-by-line string matching, only reads `title`, `tags`, `description`
+- `BuildFrontmatter` — manual string concatenation to produce YAML output
+
+Both are fragile: special YAML characters (colons, quotes) in titles or tags would produce invalid output or silently misparse. `notespub` also needs fields not covered (`public`, `slug`), and any future consumer would need to duplicate knowledge of the format.
 
 ## Goal
 
-Extend the `note` package to expose full YAML frontmatter as a generic map, covering all fields any consumer might need, while keeping the existing typed API available for callers that prefer it.
+Replace all manual YAML handling with `gopkg.in/yaml.v3`. No mix of manual and library approaches — all frontmatter reading and writing goes through the library.
 
 ## Approach
 
-Add a new function alongside the existing one:
+### Parsing
+
+Replace hand-rolled parser with a new function using `yaml.v3`:
 
 ```go
 // ParseFrontmatter returns all frontmatter fields as a map.
@@ -20,10 +27,22 @@ Add a new function alongside the existing one:
 func ParseFrontmatter(data []byte) map[string]any
 ```
 
-- Uses `gopkg.in/yaml.v3` to unmarshal the frontmatter block into `map[string]any`
-- `StripFrontmatter` and the frontmatter delimiter logic are reused as-is
-- Existing `ParseFrontmatterFields` remains unchanged for backward compatibility
-- `FrontmatterFields` convenience struct stays, backed by `ParseFrontmatter` internally to avoid duplication
+- Extracts the YAML block using the existing delimiter logic
+- Unmarshals into `map[string]any` via `yaml.v3` — supports any field, any value type
+- `ParseFrontmatterFields` is reimplemented on top of `ParseFrontmatter` (no duplication, backward compatible)
+- `StripFrontmatter` is unchanged — delimiter logic stays as-is
+
+### Writing
+
+Replace manual string builder with `yaml.v3` marshaling:
+
+```go
+// BuildFrontmatter generates YAML frontmatter from the given fields.
+func BuildFrontmatter(f FrontmatterFields) string
+```
+
+- Same signature and behavior, now backed by `yaml.v3` marshal
+- Correctly handles special characters in all field values
 
 ## Fields notespub requires
 
@@ -33,15 +52,17 @@ func ParseFrontmatter(data []byte) map[string]any
 | `title` | string | Page title |
 | `slug` | string | URL slug override (falls back to slugified title) |
 | `tags` | []string | Tag pages + related notes |
-| `description` | string | Meta description (future use) |
+| `description` | string | Meta description |
 
 ## Implementation Notes
 
-- Add `gopkg.in/yaml.v3` as a direct dependency (currently only in indirect deps via golangci-lint)
-- No changes to `Note` struct or store scanning — frontmatter parsing is a separate concern
-- New function covered by unit tests in `frontmatter_test.go`
+- Promote `gopkg.in/yaml.v3` from indirect to direct dependency (already in module graph via golangci-lint)
+- No changes to `Note` struct, store scanning, or `StripFrontmatter`
+- All changes in `frontmatter.go` and `frontmatter_test.go`
+- Existing tests must continue to pass; add cases for special characters and new fields
 
 ## Out of Scope
 
 - Validating frontmatter schema
 - Supporting TOML or JSON frontmatter
+- Block-style tag syntax (already supported via yaml.v3 unmarshal)
