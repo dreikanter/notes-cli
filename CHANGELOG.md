@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.37] - 2026-03-30
+
+### Fixed
+
+- Trim whitespace from `resolve` query to prevent lookup failures from trailing spaces or newlines ([#48])
+- Restrict note scanning to known `YYYY/MM/` directory structure ([#48])
+
+[#48]: https://github.com/dreikanter/notescli/pull/48
+
 ## [0.1.36] - 2026-03-29
 
 ### Added
