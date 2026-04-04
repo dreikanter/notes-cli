@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.40] - 2026-04-04
+
+### Added
+
+- Add `--today` flag to `resolve` command for date-based note existence checks ([#53])
+
+[#53]: https://github.com/dreikanter/notescli/pull/53
+
 ## [0.1.39] - 2026-04-04
 
 ### Changed
