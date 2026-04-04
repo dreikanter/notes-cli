@@ -2,9 +2,11 @@ package cli
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func runResolve(t *testing.T, root string, args ...string) (string, error) {
@@ -120,5 +122,38 @@ func TestResolveNonExistentErrors(t *testing.T) {
 	_, err := runResolve(t, root, "9999")
 	if err == nil {
 		t.Fatal("expected error for non-existent ref, got nil")
+	}
+}
+
+func TestResolveTodayFilterExcludesOldNotes(t *testing.T) {
+	root := testdataPath(t)
+	// "meeting" slug exists but is from 20260104, not today
+	_, err := runResolve(t, root, "--today", "meeting")
+	if err == nil {
+		t.Fatal("expected error when --today excludes matching note")
+	}
+}
+
+func TestResolveTodayFilterMatchesToday(t *testing.T) {
+	root := t.TempDir()
+	today := time.Now().Format("20060102")
+	month := today[:6]
+	dir := filepath.Join(root, today[:4], month[4:6])
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	fname := today + "_0001_daily.md"
+	if err := os.WriteFile(filepath.Join(dir, fname), []byte("test"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runResolve(t, root, "--today", "daily")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	want := filepath.Join(dir, fname)
+	if out != want {
+		t.Errorf("got %q, want %q", out, want)
 	}
 }

@@ -71,11 +71,21 @@ func Scan(root string) ([]Note, error) {
 //  4. Slug
 //  5. Type — most recent note of that type (e.g. "todo", "backlog", "weekly")
 func ResolveRef(root, query string) (*Note, error) {
+	return ResolveRefDate(root, query, "")
+}
+
+// ResolveRefDate works like ResolveRef but optionally restricts candidates to
+// notes matching the given YYYYMMDD date string. Pass "" to skip date filtering.
+func ResolveRefDate(root, query, date string) (*Note, error) {
 	query = strings.TrimSpace(query)
 
 	notes, err := Scan(root)
 	if err != nil {
 		return nil, err
+	}
+
+	if date != "" {
+		notes = FilterByDate(notes, date)
 	}
 
 	// Step 1: numeric ID
