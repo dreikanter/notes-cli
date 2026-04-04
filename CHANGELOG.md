@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.39] - 2026-04-04
+
+### Changed
+
+- Remove default limit from `ls`; output all notes unless `--limit` is specified. Handle SIGPIPE for clean pipe behavior ([#50])
+
+[#50]: https://github.com/dreikanter/notescli/pull/50
+
 ## [0.1.38] - 2026-04-04
 
 ### Added
