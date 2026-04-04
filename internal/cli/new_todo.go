@@ -13,7 +13,7 @@ import (
 
 var newTodoCmd = &cobra.Command{
 	Use:   "new-todo",
-	Short: "Create today's todo from the previous todo",
+	Short: "Create today's todo",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		force, _ := cmd.Flags().GetBool("force")
