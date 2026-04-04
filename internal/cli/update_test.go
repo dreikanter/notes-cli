@@ -388,6 +388,14 @@ func TestUpdatePrivateTakesPrecedenceOverPublic(t *testing.T) {
 	}
 }
 
+func TestUpdateAllDigitSlugErrors(t *testing.T) {
+	root := copyTestdata(t)
+	_, err := runUpdate(t, root, "8823", "--slug", "123")
+	if err == nil {
+		t.Fatal("expected error for all-digit slug, got nil")
+	}
+}
+
 // TestUpdateNoPublicFlagPreservesPublicField verifies unrelated updates don't touch the public field.
 func TestUpdateNoPublicFlagPreservesPublicField(t *testing.T) {
 	root := copyTestdata(t)

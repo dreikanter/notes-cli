@@ -47,6 +47,12 @@ var updateCmd = &cobra.Command{
 			return fmt.Errorf("unknown note type %q (valid types: %s)", updateType, strings.Join(note.KnownTypes, ", "))
 		}
 
+		if cmd.Flags().Changed("slug") {
+			if err := note.ValidateSlug(updateSlug); err != nil {
+				return err
+			}
+		}
+
 		root := mustNotesPath()
 		n, err := note.ResolveRef(root, args[0])
 		if err != nil {
