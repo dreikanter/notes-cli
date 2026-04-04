@@ -119,3 +119,26 @@ func TestNewTodoNoPreviousCreatesEmpty(t *testing.T) {
 		t.Errorf("expected no tasks in empty todo, got:\n%s", content)
 	}
 }
+
+func TestNewTodoForceOnlyTodayExists(t *testing.T) {
+	root := emptyNotesRoot(t)
+
+	// Create today's todo (no previous todo to roll from).
+	first, err := runNewTodo(t, root)
+	if err != nil {
+		t.Fatalf("first call unexpected error: %v", err)
+	}
+
+	// --force should regenerate even with no previous todo.
+	second, err := runNewTodo(t, root, "--force")
+	if err != nil {
+		t.Fatalf("force call unexpected error: %v", err)
+	}
+
+	if first == second {
+		t.Errorf("expected a different path with --force, got same path %q", first)
+	}
+	if _, err := os.Stat(second); err != nil {
+		t.Errorf("forced file does not exist: %v", err)
+	}
+}
