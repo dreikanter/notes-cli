@@ -223,6 +223,29 @@ func TestFilterByDate(t *testing.T) {
 	}
 }
 
+func TestValidateSlug(t *testing.T) {
+	tests := []struct {
+		name    string
+		slug    string
+		wantErr bool
+	}{
+		{"empty slug is valid", "", false},
+		{"normal slug", "my-feature", false},
+		{"slug with digits", "feature-123", false},
+		{"all-digit slug", "999", true},
+		{"single digit", "0", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ValidateSlug(tt.slug)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateSlug(%q) error = %v, wantErr %v", tt.slug, err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestFilterByType(t *testing.T) {
 	notes := []Note{
 		{Type: ""},

@@ -240,6 +240,15 @@ func FilterByTypes(notes []Note, types []string) []Note {
 	return results
 }
 
+// ValidateSlug returns an error if the slug is ambiguous with note ID resolution.
+// All-digit slugs are rejected because they conflict with numeric ID lookup.
+func ValidateSlug(slug string) error {
+	if slug != "" && isDigits(slug) {
+		return fmt.Errorf("slug %q is all digits, which conflicts with note ID resolution", slug)
+	}
+	return nil
+}
+
 func toSet(vals []string) map[string]struct{} {
 	m := make(map[string]struct{}, len(vals))
 	for _, v := range vals {
