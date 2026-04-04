@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.41] - 2026-04-04
+
+### Added
+
+- Add `edit` command to open a note in `$VISUAL` or `$EDITOR` ([#67])
+
+[#67]: https://github.com/dreikanter/notescli/pull/67
+
 ## [0.1.40] - 2026-04-04
 
 ### Added
