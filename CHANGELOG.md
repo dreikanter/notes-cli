@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.64] - 2026-04-05
+
+### Changed
+
+- Detach GUI editors in `edit` command so control returns to terminal immediately; terminal editors (vim, nano, etc.) still run in foreground ([#99])
+
 ## [0.1.63] - 2026-04-05
 
 ### Changed
@@ -381,3 +387,4 @@
 [#93]: https://github.com/dreikanter/notescli/issues/93
 [#97]: https://github.com/dreikanter/notescli/pull/97
 [#98]: https://github.com/dreikanter/notescli/pull/98
+[#99]: https://github.com/dreikanter/notescli/pull/99
