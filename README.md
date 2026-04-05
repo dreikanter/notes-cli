@@ -1,10 +1,8 @@
 # Notes CLI
 
-A plain-text note archive you own entirely.
+A command-line tool for managing a plain-text note archive you own entirely.
 
-Every note is a markdown file in a date-stamped folder (`2026/04/20260405_9522.md`). No database, no proprietary format, no account — just files on disk, synced however you like (Dropbox, git, rsync, nothing at all).
-
-A small Go CLI (`notes`) gives you fast, scriptable access to the archive from the terminal:
+Every note is a markdown file in a date-stamped folder (`2026/04/20260405_9522.md`). No database, no proprietary format, no account — just files on disk, synced however you like (Dropbox, git, rsync, nothing at all). The CLI gives you fast, scriptable access to the archive from the terminal:
 
 - **Create** notes with optional title, tags, slug, and type
 - **List and filter** by date, type, tag, or slug
