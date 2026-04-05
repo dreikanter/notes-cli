@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.54] - 2026-04-05
+
+### Changed
+
+- Merge `latest` into `resolve`; `resolve` now accepts `--type`, `--slug`, `--tag` filter flags as an alternative to the positional argument ([#85])
+
+### Removed
+
+- Remove `latest` command (use `resolve --type`, `resolve --slug`, `resolve --tag` instead) ([#85])
+
+### Fixed
+
+- Fix broken `edit` and `rm` tests after testdata rename in [#72] ([#85])
+
 ## [0.1.41] - 2026-04-05
 
 ### Added
@@ -217,6 +231,7 @@
 - Add `new` and `new-todo` commands ([#2])
 - Add `--no-frontmatter` flag to `read` command ([#3], [#4])
 
+[0.1.54]: https://github.com/dreikanter/notescli/releases/tag/v0.1.54
 [0.1.41]: https://github.com/dreikanter/notescli/releases/tag/v0.1.41
 [0.1.40]: https://github.com/dreikanter/notescli/releases/tag/v0.1.40
 [0.1.39]: https://github.com/dreikanter/notescli/releases/tag/v0.1.39
@@ -297,3 +312,4 @@
 [#81]: https://github.com/dreikanter/notescli/pull/81
 [#82]: https://github.com/dreikanter/notescli/pull/82
 [#83]: https://github.com/dreikanter/notescli/pull/83
+[#85]: https://github.com/dreikanter/notescli/issues/85
