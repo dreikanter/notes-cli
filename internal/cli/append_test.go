@@ -552,3 +552,51 @@ func TestAppendDescriptionWithoutCreateOrTodayErrors(t *testing.T) {
 		t.Fatal("expected error when using --description without --create or --today, got nil")
 	}
 }
+
+func TestAppendCreateWithPublic(t *testing.T) {
+	root := copyTestdata(t)
+	out, err := runAppend(t, root, "public content", "--type", "weekly", "--create", "--public")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("cannot read created file: %v", err)
+	}
+	if !strings.Contains(string(data), "public: true") {
+		t.Errorf("expected public: true in frontmatter, got:\n%s", string(data))
+	}
+}
+
+func TestAppendCreatePrivateOverridesPublic(t *testing.T) {
+	root := copyTestdata(t)
+	out, err := runAppend(t, root, "private content", "--type", "weekly", "--create", "--public", "--private")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("cannot read created file: %v", err)
+	}
+	if strings.Contains(string(data), "public:") {
+		t.Errorf("expected public field absent when --private wins, got:\n%s", string(data))
+	}
+}
+
+func TestAppendPublicWithoutCreateErrors(t *testing.T) {
+	root := copyTestdata(t)
+	_, err := runAppend(t, root, "text", "--type", "todo", "--public")
+	if err == nil {
+		t.Fatal("expected error when using --public without --create or --today, got nil")
+	}
+}
+
+func TestAppendPrivateWithoutCreateErrors(t *testing.T) {
+	root := copyTestdata(t)
+	_, err := runAppend(t, root, "text", "--type", "todo", "--private")
+	if err == nil {
+		t.Fatal("expected error when using --private without --create or --today, got nil")
+	}
+}
