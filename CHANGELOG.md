@@ -4,6 +4,7 @@
 
 ### Changed
 
+- Simplify `--slug` flag to single-value on `ls` and `resolve` commands ([#85])
 - Merge `latest` into `resolve`; `resolve` now accepts `--type`, `--slug`, `--tag` filter flags as an alternative to the positional argument ([#85])
 
 ### Removed
@@ -13,7 +14,6 @@
 ### Fixed
 
 - Fix broken `edit` and `rm` tests after testdata rename in [#72] ([#85])
-
 ## [0.1.41] - 2026-04-05
 
 ### Added
