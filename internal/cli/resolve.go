@@ -10,8 +10,19 @@ import (
 )
 
 var resolveCmd = &cobra.Command{
-	Use:   "resolve [<id|path|basename|slug|type>]",
+	Use:   "resolve [<id|type|query>]",
 	Short: "Resolve a note reference and print its absolute path",
+	Long: `Resolve a note reference and print its absolute path.
+
+With a positional argument, resolution follows this priority:
+  1. Exact numeric ID (e.g. "8823")
+  2. Exact note type (todo, backlog, weekly) — most recent match
+  3. Absolute or relative file path
+  4. Basename or slug — exact match on filename components
+
+Alternatively, use filter flags (--type, --slug, --tag, --today) for
+explicit attribute-based lookup. Flags cannot be combined with a
+positional argument.`,
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		root := mustNotesPath()
