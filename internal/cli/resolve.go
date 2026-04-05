@@ -26,21 +26,15 @@ positional argument.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		root := mustNotesPath()
-
-		today, _ := cmd.Flags().GetBool("today")
-		types, _ := cmd.Flags().GetStringSlice("type")
-		slug, _ := cmd.Flags().GetString("slug")
-		tags, _ := cmd.Flags().GetStringSlice("tag")
-
-		hasFilters := len(types) > 0 || slug != "" || len(tags) > 0
+		f := readFilterFlags(cmd)
 
 		if len(args) == 1 {
-			if hasFilters {
+			if f.hasAttributeFilters() {
 				return fmt.Errorf("cannot combine positional argument with filter flags")
 			}
 
 			var date string
-			if today {
+			if f.Today {
 				date = time.Now().Format("20060102")
 			}
 
@@ -53,7 +47,7 @@ positional argument.`,
 			return nil
 		}
 
-		if !hasFilters && !today {
+		if !f.active() {
 			return fmt.Errorf("specify a note by positional argument or filter flags (--type, --slug, --tag, --today)")
 		}
 
@@ -62,20 +56,9 @@ positional argument.`,
 			return err
 		}
 
-		if today {
-			notes = note.FilterByDate(notes, time.Now().Format("20060102"))
-		}
-		if len(types) > 0 {
-			notes = note.FilterByTypes(notes, types)
-		}
-		if slug != "" {
-			notes = note.FilterBySlug(notes, slug)
-		}
-		if len(tags) > 0 {
-			notes, err = note.FilterByTags(notes, root, tags)
-			if err != nil {
-				return err
-			}
+		notes, err = applyFilters(notes, root, f)
+		if err != nil {
+			return err
 		}
 
 		if len(notes) == 0 {
@@ -88,10 +71,7 @@ positional argument.`,
 }
 
 func registerResolveFlags() {
-	resolveCmd.Flags().Bool("today", false, "only match notes created today")
-	resolveCmd.Flags().StringSlice("type", nil, "filter by note type (repeatable)")
-	resolveCmd.Flags().String("slug", "", "filter by slug")
-	resolveCmd.Flags().StringSlice("tag", nil, "filter by tag (repeatable, all must match)")
+	addFilterFlags(resolveCmd)
 }
 
 func init() {
