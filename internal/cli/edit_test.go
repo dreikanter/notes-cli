@@ -8,6 +8,94 @@ import (
 	"testing"
 )
 
+func TestParseEditor(t *testing.T) {
+	tests := []struct {
+		input    string
+		wantBin  string
+		wantArgs []string
+	}{
+		{"vim", "vim", nil},
+		{"subl --wait", "subl", []string{"--wait"}},
+		{"/usr/bin/code -w --new-window", "/usr/bin/code", []string{"-w", "--new-window"}},
+		{"", "", nil},
+	}
+	for _, tt := range tests {
+		bin, args := parseEditor(tt.input)
+		if bin != tt.wantBin {
+			t.Errorf("parseEditor(%q) bin = %q, want %q", tt.input, bin, tt.wantBin)
+		}
+		if len(args) != len(tt.wantArgs) {
+			t.Errorf("parseEditor(%q) args = %v, want %v", tt.input, args, tt.wantArgs)
+			continue
+		}
+		for i := range args {
+			if args[i] != tt.wantArgs[i] {
+				t.Errorf("parseEditor(%q) args[%d] = %q, want %q", tt.input, i, args[i], tt.wantArgs[i])
+			}
+		}
+	}
+}
+
+func TestIsTerminalEditor(t *testing.T) {
+	for _, name := range []string{"vim", "nvim", "nano", "emacs", "vi", "micro"} {
+		if !isTerminalEditor(name) {
+			t.Errorf("expected %q to be a terminal editor", name)
+		}
+	}
+	if !isTerminalEditor("/usr/bin/vim") {
+		t.Error("expected /usr/bin/vim to be a terminal editor")
+	}
+	for _, name := range []string{"code", "subl", "zed", "gedit"} {
+		if isTerminalEditor(name) {
+			t.Errorf("expected %q to NOT be a terminal editor", name)
+		}
+	}
+}
+
+// writeFakeEditor creates a shell script named after a known terminal editor
+// so the edit command runs it in foreground mode.
+func writeFakeEditor(t *testing.T, body string) string {
+	t.Helper()
+	dir := t.TempDir()
+	script := filepath.Join(dir, "vi")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\n"+body+"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return script
+}
+
+func TestEditPassesArgsToEditor(t *testing.T) {
+	root := testdataPath(t)
+
+	marker := filepath.Join(t.TempDir(), "edited")
+	script := writeFakeEditor(t, `for arg in "$@"; do echo "$arg"; done > `+marker)
+
+	t.Setenv("VISUAL", "")
+	t.Setenv("EDITOR", script+" --flag")
+
+	_, err := runEdit(t, root, "8823")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	got, err := os.ReadFile(marker)
+	if err != nil {
+		t.Fatalf("marker file not created: %v", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(got)), "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 lines (flag + path), got %d: %v", len(lines), lines)
+	}
+	if lines[0] != "--flag" {
+		t.Errorf("first arg = %q, want %q", lines[0], "--flag")
+	}
+	want := filepath.Join(root, "2026/01/20260106_8823_999.md")
+	if lines[1] != want {
+		t.Errorf("second arg = %q, want %q", lines[1], want)
+	}
+}
+
 func runEdit(t *testing.T, root string, args ...string) (string, error) {
 	t.Helper()
 
@@ -24,18 +112,13 @@ func runEdit(t *testing.T, root string, args ...string) (string, error) {
 func TestEditOpensEditor(t *testing.T) {
 	root := testdataPath(t)
 
-	// Use a script that writes the received path to a temp file
 	marker := filepath.Join(t.TempDir(), "edited")
-	script := filepath.Join(t.TempDir(), "fake-editor.sh")
-	err := os.WriteFile(script, []byte("#!/bin/sh\necho \"$1\" > "+marker+"\n"), 0o755)
-	if err != nil {
-		t.Fatal(err)
-	}
+	script := writeFakeEditor(t, `echo "$1" > `+marker)
 
 	t.Setenv("VISUAL", "")
 	t.Setenv("EDITOR", script)
 
-	_, err = runEdit(t, root, "8823")
+	_, err := runEdit(t, root, "8823")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -55,22 +138,14 @@ func TestEditPrefersVisual(t *testing.T) {
 	root := testdataPath(t)
 
 	marker := filepath.Join(t.TempDir(), "edited")
-	script := filepath.Join(t.TempDir(), "fake-editor.sh")
-	err := os.WriteFile(script, []byte("#!/bin/sh\necho \"$1\" > "+marker+"\n"), 0o755)
-	if err != nil {
-		t.Fatal(err)
-	}
+	script := writeFakeEditor(t, `echo "$1" > `+marker)
 
-	badScript := filepath.Join(t.TempDir(), "bad-editor.sh")
-	err = os.WriteFile(badScript, []byte("#!/bin/sh\nexit 1\n"), 0o755)
-	if err != nil {
-		t.Fatal(err)
-	}
+	badScript := writeFakeEditor(t, "exit 1")
 
 	t.Setenv("VISUAL", script)
 	t.Setenv("EDITOR", badScript)
 
-	_, err = runEdit(t, root, "8823")
+	_, err := runEdit(t, root, "8823")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -116,16 +191,12 @@ func TestEditBySlug(t *testing.T) {
 	root := testdataPath(t)
 
 	marker := filepath.Join(t.TempDir(), "edited")
-	script := filepath.Join(t.TempDir(), "fake-editor.sh")
-	err := os.WriteFile(script, []byte("#!/bin/sh\necho \"$1\" > "+marker+"\n"), 0o755)
-	if err != nil {
-		t.Fatal(err)
-	}
+	script := writeFakeEditor(t, `echo "$1" > `+marker)
 
 	t.Setenv("VISUAL", "")
 	t.Setenv("EDITOR", script)
 
-	_, err = runEdit(t, root, "meeting")
+	_, err := runEdit(t, root, "meeting")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -145,16 +216,12 @@ func TestEditByType(t *testing.T) {
 	root := testdataPath(t)
 
 	marker := filepath.Join(t.TempDir(), "edited")
-	script := filepath.Join(t.TempDir(), "fake-editor.sh")
-	err := os.WriteFile(script, []byte("#!/bin/sh\necho \"$1\" > "+marker+"\n"), 0o755)
-	if err != nil {
-		t.Fatal(err)
-	}
+	script := writeFakeEditor(t, `echo "$1" > `+marker)
 
 	t.Setenv("VISUAL", "")
 	t.Setenv("EDITOR", script)
 
-	_, err = runEdit(t, root, "todo")
+	_, err := runEdit(t, root, "todo")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
