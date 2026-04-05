@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.46] - 2026-04-04
+
+### Added
+
+- Add `rm` command for deleting notes by ref ([#65])
+
+[#65]: https://github.com/dreikanter/notescli/pull/65
+
 ## [0.1.45] - 2026-04-04
 
 ### Fixed
