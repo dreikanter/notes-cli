@@ -28,10 +28,8 @@ positional argument.`,
 		root := mustNotesPath()
 		f := readFilterFlags(cmd)
 
-		hasNonTodayFilters := len(f.Types) > 0 || f.Slug != "" || len(f.Tags) > 0
-
 		if len(args) == 1 {
-			if hasNonTodayFilters {
+			if f.hasAttributeFilters() {
 				return fmt.Errorf("cannot combine positional argument with filter flags")
 			}
 

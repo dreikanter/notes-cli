@@ -25,7 +25,11 @@ func readFilterFlags(cmd *cobra.Command) filterOpts {
 }
 
 func (f filterOpts) active() bool {
-	return f.Today || len(f.Types) > 0 || f.Slug != "" || len(f.Tags) > 0
+	return f.Today || f.hasAttributeFilters()
+}
+
+func (f filterOpts) hasAttributeFilters() bool {
+	return len(f.Types) > 0 || f.Slug != "" || len(f.Tags) > 0
 }
 
 // applyFilters applies the common filter pipeline to a list of notes.
