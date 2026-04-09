@@ -1,4 +1,4 @@
-module github.com/dreikanter/notescli
+module github.com/dreikanter/notes-cli
 
 go 1.25.7
 

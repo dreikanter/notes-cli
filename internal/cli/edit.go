@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dreikanter/notescli/note"
+	"github.com/dreikanter/notes-cli/note"
 	"github.com/spf13/cobra"
 )
 
