@@ -283,7 +283,7 @@ Add at the top of `CHANGELOG.md`, after the `# Changelog` heading and before the
 
 - `new-todo` no longer fails when no previous todo exists; creates an empty todo instead. `--force` works correctly when today's todo is the only one ([#58])
 
-[#58]: https://github.com/dreikanter/notescli/pull/58
+[#58]: https://github.com/dreikanter/notes-cli/pull/58
 ```
 
 - [ ] **Step 2: Commit**

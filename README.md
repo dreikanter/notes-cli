@@ -20,7 +20,7 @@ Think of it as the storage layer that sits underneath your workflow, not the wor
 ## Install
 
 ```sh
-go install github.com/dreikanter/notescli/cmd/notes@latest
+go install github.com/dreikanter/notes-cli/cmd/notes@latest
 ```
 
 Make sure `~/go/bin` is on your `PATH`:

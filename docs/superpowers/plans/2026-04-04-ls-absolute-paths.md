@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/dreikanter/notescli/note"
+	"github.com/dreikanter/notes-cli/note"
 	"github.com/spf13/cobra"
 )
 ```
@@ -37,7 +37,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dreikanter/notescli/note"
+	"github.com/dreikanter/notes-cli/note"
 	"github.com/spf13/cobra"
 )
 ```
@@ -156,7 +156,7 @@ At the top of `CHANGELOG.md`, after the `# Changelog` heading and before the `##
 
 - Output absolute paths from `ls` to enable Unix pipelines like `notes ls | xargs notes read` ([#55])
 
-[#55]: https://github.com/dreikanter/notescli/pull/55
+[#55]: https://github.com/dreikanter/notes-cli/pull/55
 ```
 
 Note: The `[#55]` link reference goes at the end of the new entry block, before the blank line separating it from the `## [0.1.40]` entry. Follow the same pattern as existing entries (each entry has its own link reference immediately after it).

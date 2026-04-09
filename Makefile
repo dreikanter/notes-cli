@@ -2,7 +2,7 @@
 
 BINARY := notes
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
-LDFLAGS := -X github.com/dreikanter/notescli/internal/cli.Version=$(VERSION)
+LDFLAGS := -X github.com/dreikanter/notes-cli/internal/cli.Version=$(VERSION)
 
 build:
 	go build -ldflags "$(LDFLAGS)" -o $(BINARY) ./cmd/notes

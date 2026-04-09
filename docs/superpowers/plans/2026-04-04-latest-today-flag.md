@@ -80,7 +80,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dreikanter/notescli/note"
+	"github.com/dreikanter/notes-cli/note"
 	"github.com/spf13/cobra"
 )
 
@@ -199,7 +199,7 @@ Insert immediately after `# Changelog` (before `## [0.1.40]`):
 And at the bottom of the file, add:
 
 ```markdown
-[#NN]: https://github.com/dreikanter/notescli/pull/NN
+[#NN]: https://github.com/dreikanter/notes-cli/pull/NN
 ```
 
 (Replace `NN` with the actual PR number once known.)

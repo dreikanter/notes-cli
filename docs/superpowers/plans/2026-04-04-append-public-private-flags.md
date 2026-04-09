@@ -231,7 +231,7 @@ Open `CHANGELOG.md` and insert a new entry at the top (after the `# Changelog` h
 
 - Add `--public` and `--private` flags to `append` command, gated on `--create`/`--today` [#68]
 
-[#68]: https://github.com/dreikanter/notescli/pull/68
+[#68]: https://github.com/dreikanter/notes-cli/pull/68
 ```
 
 - [ ] **Step 3: Commit changelog**

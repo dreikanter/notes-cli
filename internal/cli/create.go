@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dreikanter/notescli/note"
+	"github.com/dreikanter/notes-cli/note"
 )
 
 // createNoteParams holds the parameters for creating a new note file.

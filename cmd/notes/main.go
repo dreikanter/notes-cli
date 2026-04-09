@@ -4,7 +4,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/dreikanter/notescli/internal/cli"
+	"github.com/dreikanter/notes-cli/internal/cli"
 )
 
 func main() {
