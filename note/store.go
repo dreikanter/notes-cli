@@ -65,9 +65,10 @@ func Scan(root string) ([]Note, error) {
 }
 
 // ResolveRef resolves a note reference to a Note using the following priority:
-//  1. Numeric ID — exact match
+//  1. Numeric ID — exact match; all-digit queries never fall through
 //  2. Type — most recent note of a known type (todo, backlog, weekly)
-//  3. Path substring — most recent note whose relative path contains the query
+//  3. Path — absolute or relative path with separator, exact match under root
+//  4. Slug substring — most recent note whose slug contains the query
 func ResolveRef(root, query string) (*Note, error) {
 	return ResolveRefDate(root, query, "")
 }
@@ -86,13 +87,14 @@ func ResolveRefDate(root, query, date string) (*Note, error) {
 		notes = FilterByDate(notes, date)
 	}
 
-	// Step 1: numeric ID
+	// Step 1: numeric ID — strict, no fallthrough
 	if query != "" && isDigits(query) {
 		for i := range notes {
 			if notes[i].ID == query {
 				return &notes[i], nil
 			}
 		}
+		return nil, fmt.Errorf("note not found: %s", query)
 	}
 
 	// Step 2: type — most recent match
@@ -104,15 +106,21 @@ func ResolveRefDate(root, query, date string) (*Note, error) {
 		}
 	}
 
-	// Step 3: path substring — most recent match
-	// For absolute paths, convert to a relative path under root first.
-	fragment := query
-	if filepath.IsAbs(query) {
+	// Step 3: path (absolute, or relative containing a separator) — exact match
+	if filepath.IsAbs(query) || strings.ContainsAny(query, `/\`) {
+		queryPath := query
+		if !filepath.IsAbs(queryPath) {
+			abs, err := filepath.Abs(queryPath)
+			if err != nil {
+				return nil, fmt.Errorf("cannot resolve path: %w", err)
+			}
+			queryPath = abs
+		}
 		absRoot, err := filepath.EvalSymlinks(root)
 		if err != nil {
 			return nil, fmt.Errorf("cannot resolve notes path: %w", err)
 		}
-		absQuery, err := filepath.EvalSymlinks(query)
+		absQuery, err := filepath.EvalSymlinks(queryPath)
 		if err != nil {
 			return nil, fmt.Errorf("note not found: %s", query)
 		}
@@ -120,11 +128,17 @@ func ResolveRefDate(root, query, date string) (*Note, error) {
 		if err != nil || strings.HasPrefix(rel, "..") {
 			return nil, fmt.Errorf("path is outside notes directory: %s", query)
 		}
-		fragment = rel
+		for i := range notes {
+			if notes[i].RelPath == rel {
+				return &notes[i], nil
+			}
+		}
+		return nil, fmt.Errorf("note not found: %s", query)
 	}
 
+	// Step 4: slug substring — most recent match
 	for i := range notes {
-		if strings.Contains(notes[i].RelPath, fragment) {
+		if strings.Contains(notes[i].Slug, query) {
 			return &notes[i], nil
 		}
 	}
