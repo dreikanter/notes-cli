@@ -59,7 +59,7 @@ claude -p --model <model> \
   If only `tags` is empty, only `tags` appears in `properties` and `required`.
 - The system prompt instructs Claude to produce concise frontmatter metadata for a personal note and to return only the requested fields.
 - Binary resolved via `exec.LookPath("claude")`. If not found: `"claude CLI not found in PATH"`.
-- `claude -p --output-format json` emits a JSON envelope on stdout. The exact shape of that envelope must be confirmed during implementation (capture one real invocation's stdout). The command extracts the schema-validated payload from the envelope and unmarshals it into a struct with `title`, `description`, `tags`. If extraction or unmarshalling fails, the parse error surfaces clearly and the file is untouched.
+- `claude -p --output-format json` emits a JSON envelope on stdout. The exact shape of that envelope must be confirmed during implementation — run the command once by hand with a trivial schema, inspect stdout, and code the parser against the observed shape. The command extracts the schema-validated payload from the envelope and unmarshals it into a struct with `title`, `description`, `tags`. If extraction or unmarshalling fails, the parse error surfaces clearly and the file is untouched.
 
 ## Files
 
