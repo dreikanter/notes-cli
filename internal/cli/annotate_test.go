@@ -296,3 +296,65 @@ func TestAnnotateFillsEmptyFields(t *testing.T) {
 		t.Errorf("body missing or modified, got:\n%s", content)
 	}
 }
+
+// noteWithFrontmatter writes a note with the given frontmatter + body and returns (root, ref).
+func noteWithFrontmatter(t *testing.T, fm, body string) (root, ref string) {
+	t.Helper()
+	root = t.TempDir()
+	dir := filepath.Join(root, "2026", "04")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "20260418_9001.md")
+	if err := os.WriteFile(path, []byte(fm+body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return root, "9001"
+}
+
+// fakeClaudeSentinel writes a fake claude script that fails if ever invoked.
+// Used to assert the command never called claude.
+func fakeClaudeSentinel(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	script := filepath.Join(dir, "claude")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\necho SHOULD NOT BE CALLED >&2\nexit 99\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return script
+}
+
+func TestAnnotateNoOpWhenAllFieldsFilled(t *testing.T) {
+	fm := "---\ntitle: Existing\ndescription: Already here\ntags: [x, y]\n---\n\n"
+	root, ref := noteWithFrontmatter(t, fm, "body content")
+	withClaudeBinary(t, fakeClaudeSentinel(t))
+
+	out, err := runAnnotate(t, root, ref)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	want := filepath.Join(root, "2026/04/20260418_9001.md")
+	if out != want {
+		t.Errorf("stdout = %q, want %q", out, want)
+	}
+
+	data, _ := os.ReadFile(want)
+	if string(data) != fm+"body content" {
+		t.Errorf("file modified; got:\n%s", string(data))
+	}
+}
+
+func TestAnnotateNoBodyErrors(t *testing.T) {
+	fm := "---\ntitle: only title\n---\n\n"
+	root, ref := noteWithFrontmatter(t, fm, "")
+	withClaudeBinary(t, fakeClaudeSentinel(t))
+
+	_, err := runAnnotate(t, root, ref)
+	if err == nil {
+		t.Fatal("expected error for empty body")
+	}
+	if !strings.Contains(err.Error(), "no body content") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
