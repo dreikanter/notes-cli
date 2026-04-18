@@ -358,3 +358,59 @@ func TestAnnotateNoBodyErrors(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
+
+func TestAnnotateClaudeNotFound(t *testing.T) {
+	root, ref := noteWithOnlyBody(t, "body text here")
+	withClaudeBinary(t, filepath.Join(t.TempDir(), "does-not-exist"))
+
+	_, err := runAnnotate(t, root, ref)
+	if err == nil {
+		t.Fatal("expected error when claude binary missing")
+	}
+	if !strings.Contains(err.Error(), "not found") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestAnnotateClaudeNonZeroExit(t *testing.T) {
+	root, ref := noteWithOnlyBody(t, "body text here")
+
+	dir := t.TempDir()
+	script := filepath.Join(dir, "claude")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\necho bad things happened >&2\nexit 2\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	withClaudeBinary(t, script)
+
+	_, err := runAnnotate(t, root, ref)
+	if err == nil {
+		t.Fatal("expected error on non-zero exit")
+	}
+	if !strings.Contains(err.Error(), "bad things happened") {
+		t.Errorf("stderr not surfaced: %v", err)
+	}
+
+	// File must be untouched.
+	data, _ := os.ReadFile(filepath.Join(root, "2026/04/20260418_9000.md"))
+	if string(data) != "body text here" {
+		t.Errorf("file was modified: %q", string(data))
+	}
+}
+
+func TestAnnotateMalformedJSON(t *testing.T) {
+	root, ref := noteWithOnlyBody(t, "body text here")
+	withClaudeBinary(t, writeFakeClaude(t, `not valid json`))
+
+	_, err := runAnnotate(t, root, ref)
+	if err == nil {
+		t.Fatal("expected error for malformed JSON")
+	}
+	if !strings.Contains(err.Error(), "claude response") {
+		t.Errorf("unexpected error: %v", err)
+	}
+
+	data, _ := os.ReadFile(filepath.Join(root, "2026/04/20260418_9000.md"))
+	if string(data) != "body text here" {
+		t.Errorf("file was modified: %q", string(data))
+	}
+}
