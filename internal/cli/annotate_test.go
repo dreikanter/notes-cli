@@ -3,6 +3,9 @@ package cli
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -222,5 +225,74 @@ func TestMergeAnnotationPreservesFilledFields(t *testing.T) {
 	}
 	if !equalStrings(merged.Tags, []string{"keep"}) {
 		t.Errorf("tags overwritten: %v", merged.Tags)
+	}
+}
+
+// writeFakeClaude writes a shell script named "claude" into a temp dir
+// that echoes the given JSON envelope to stdout. Returns the script path.
+func writeFakeClaude(t *testing.T, envelope string) string {
+	t.Helper()
+	dir := t.TempDir()
+	script := filepath.Join(dir, "claude")
+	body := fmt.Sprintf("#!/bin/sh\ncat <<'EOF'\n%s\nEOF\n", envelope)
+	if err := os.WriteFile(script, []byte(body), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	return script
+}
+
+// noteWithOnlyBody writes a fresh note file in a temp root and returns the root + ref.
+// The resulting note has no frontmatter — just body text.
+func noteWithOnlyBody(t *testing.T, body string) (root, ref string) {
+	t.Helper()
+	root = t.TempDir()
+	dir := filepath.Join(root, "2026", "04")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "20260418_9000.md")
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return root, "9000"
+}
+
+func withClaudeBinary(t *testing.T, path string) {
+	t.Helper()
+	old := claudeBinary
+	claudeBinary = path
+	t.Cleanup(func() { claudeBinary = old })
+}
+
+func TestAnnotateFillsEmptyFields(t *testing.T) {
+	root, ref := noteWithOnlyBody(t, "# Weekly sync\n\nDiscussed Q2 roadmap, hiring, and launch dates.\n")
+	withClaudeBinary(t, writeFakeClaude(t, annotateSampleEnvelope))
+
+	out, err := runAnnotate(t, root, ref)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	want := filepath.Join(root, "2026/04/20260418_9000.md")
+	if out != want {
+		t.Errorf("stdout path = %q, want %q", out, want)
+	}
+
+	data, err := os.ReadFile(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := string(data)
+	for _, s := range []string{
+		"title: Weekly sync",
+		"description: Notes from the weekly team sync.",
+		"tags: [meeting, weekly]",
+	} {
+		if !strings.Contains(content, s) {
+			t.Errorf("expected %q in file, got:\n%s", s, content)
+		}
+	}
+	if !strings.Contains(content, "# Weekly sync\n\nDiscussed Q2 roadmap") {
+		t.Errorf("body missing or modified, got:\n%s", content)
 	}
 }

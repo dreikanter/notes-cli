@@ -19,9 +19,13 @@ package cli
 // and parseAnnotation in Task 4 accordingly.
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 
 	"github.com/dreikanter/notes-cli/note"
 	"github.com/spf13/cobra"
@@ -33,13 +37,103 @@ var claudeBinary = "claude"
 
 const annotateDefaultModel = "claude-haiku-4-5"
 
+const annotateSystemPrompt = `You are annotating a personal note stored as a markdown file.
+Generate concise metadata for the provided note body, returning ONLY the fields required by the response schema.
+- title: short title, <= 8 words.
+- description: single-sentence summary, <= 140 characters.
+- tags: 1-5 lowercase single-word slugs related to the content.`
+
 var annotateCmd = &cobra.Command{
 	Use:   "annotate <id|type|query>",
 	Short: "Fill empty frontmatter (title, description, tags) using Claude Code CLI",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return errors.New("not implemented")
-	},
+	RunE:  annotateRunE,
+}
+
+func annotateRunE(cmd *cobra.Command, args []string) error {
+	model, _ := cmd.Flags().GetString("model")
+
+	root := mustNotesPath()
+	n, err := note.ResolveRef(root, args[0])
+	if err != nil {
+		return err
+	}
+
+	fullPath := filepath.Join(root, n.RelPath)
+	data, err := os.ReadFile(fullPath)
+	if err != nil {
+		return fmt.Errorf("cannot read note: %w", err)
+	}
+
+	existing := note.ParseFrontmatterFields(data)
+	body := note.StripFrontmatter(data)
+
+	empty := annotateEmptyFields(existing)
+	if len(empty) == 0 {
+		fmt.Fprintln(cmd.OutOrStdout(), fullPath)
+		return nil
+	}
+
+	if len(bytes.TrimSpace(body)) == 0 {
+		return errors.New("note has no body content to annotate")
+	}
+
+	schema := buildAnnotateSchema(empty)
+	out, err := runClaude(model, schema, string(body))
+	if err != nil {
+		return err
+	}
+
+	gen, err := parseAnnotation(out)
+	if err != nil {
+		return err
+	}
+
+	merged := mergeAnnotation(existing, gen)
+	newContent := note.BuildFrontmatter(merged) + string(body)
+
+	tmpPath := fullPath + ".tmp"
+	if err := os.WriteFile(tmpPath, []byte(newContent), 0o644); err != nil {
+		return fmt.Errorf("cannot write note: %w", err)
+	}
+	if err := os.Rename(tmpPath, fullPath); err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("cannot rename note: %w", err)
+	}
+
+	fmt.Fprintln(cmd.OutOrStdout(), fullPath)
+	return nil
+}
+
+// runClaude executes the Claude Code CLI non-interactively and returns its stdout.
+// Returns a clear error if the binary is not found or exits non-zero.
+func runClaude(model, schema, prompt string) ([]byte, error) {
+	bin, err := exec.LookPath(claudeBinary)
+	if err != nil {
+		return nil, errors.New("claude CLI not found in PATH")
+	}
+
+	args := []string{
+		"-p",
+		"--model", model,
+		"--output-format", "json",
+		"--json-schema", schema,
+		"--append-system-prompt", annotateSystemPrompt,
+		prompt,
+	}
+
+	c := exec.Command(bin, args...)
+	var stdout, stderr bytes.Buffer
+	c.Stdout = &stdout
+	c.Stderr = &stderr
+	if err := c.Run(); err != nil {
+		msg := stderr.String()
+		if msg == "" {
+			msg = err.Error()
+		}
+		return nil, fmt.Errorf("claude failed: %s", msg)
+	}
+	return stdout.Bytes(), nil
 }
 
 // annotateEmptyFields returns the empty fields among {title, description, tags}
