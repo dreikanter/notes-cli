@@ -21,6 +21,7 @@ package cli
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/dreikanter/notes-cli/note"
 	"github.com/spf13/cobra"
@@ -80,6 +81,36 @@ func buildAnnotateSchema(fields []string) string {
 	}
 	b, _ := json.Marshal(schema)
 	return string(b)
+}
+
+// annotateEnvelope mirrors the outer JSON written by `claude -p --output-format json`.
+// Only the fields we rely on are declared.
+type annotateEnvelope struct {
+	IsError bool   `json:"is_error"`
+	Result  string `json:"result"`
+}
+
+// annotateResult is the schema-validated payload carried by annotateEnvelope.Result.
+type annotateResult struct {
+	Title       string   `json:"title,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Tags        []string `json:"tags,omitempty"`
+}
+
+// parseAnnotation unmarshals the claude CLI stdout into an annotateResult.
+func parseAnnotation(raw []byte) (annotateResult, error) {
+	var env annotateEnvelope
+	if err := json.Unmarshal(raw, &env); err != nil {
+		return annotateResult{}, fmt.Errorf("cannot parse claude response: %w", err)
+	}
+	if env.IsError {
+		return annotateResult{}, fmt.Errorf("claude returned error: %s", env.Result)
+	}
+	var res annotateResult
+	if err := json.Unmarshal([]byte(env.Result), &res); err != nil {
+		return annotateResult{}, fmt.Errorf("cannot parse claude response payload: %w", err)
+	}
+	return res, nil
 }
 
 func init() {

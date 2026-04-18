@@ -120,3 +120,57 @@ func TestAnnotateCommandRegistered(t *testing.T) {
 		t.Errorf("expected annotate Use, got %q", cmd.Use)
 	}
 }
+
+// annotateSampleEnvelope is the JSON shape observed in Task 2.
+// NOTE: Task 2 could not run the live probe (sandbox-blocked); this fixture
+// is based on the documented claude -p --output-format json shape. If the
+// actual CLI shape differs, adjust this fixture AND the annotateEnvelope /
+// parseAnnotation implementation together.
+const annotateSampleEnvelope = `{
+  "type": "result",
+  "subtype": "success",
+  "is_error": false,
+  "result": "{\"title\":\"Weekly sync\",\"description\":\"Notes from the weekly team sync.\",\"tags\":[\"meeting\",\"weekly\"]}"
+}`
+
+func TestParseAnnotationHappyPath(t *testing.T) {
+	res, err := parseAnnotation([]byte(annotateSampleEnvelope))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Title != "Weekly sync" {
+		t.Errorf("title = %q, want %q", res.Title, "Weekly sync")
+	}
+	if res.Description != "Notes from the weekly team sync." {
+		t.Errorf("description = %q", res.Description)
+	}
+	if !equalStrings(res.Tags, []string{"meeting", "weekly"}) {
+		t.Errorf("tags = %v", res.Tags)
+	}
+}
+
+func TestParseAnnotationInvalidEnvelope(t *testing.T) {
+	_, err := parseAnnotation([]byte("not json"))
+	if err == nil {
+		t.Fatal("expected error for invalid envelope")
+	}
+}
+
+func TestParseAnnotationInvalidInnerJSON(t *testing.T) {
+	bad := `{"type":"result","subtype":"success","is_error":false,"result":"not json"}`
+	_, err := parseAnnotation([]byte(bad))
+	if err == nil {
+		t.Fatal("expected error for invalid inner JSON")
+	}
+}
+
+func TestParseAnnotationErrorFlag(t *testing.T) {
+	bad := `{"type":"result","subtype":"error","is_error":true,"result":"something broke"}`
+	_, err := parseAnnotation([]byte(bad))
+	if err == nil {
+		t.Fatal("expected error when is_error=true")
+	}
+	if !strings.Contains(err.Error(), "something broke") {
+		t.Errorf("error message should include server-side message: %v", err)
+	}
+}
