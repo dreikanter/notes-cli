@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Change daily task tag format from `[daily]` to `#daily` ([#104])
+- Change daily task tag format from `[daily]` to `#daily` ([#106])
 
 ## [0.1.66] - 2026-04-09
 
@@ -409,4 +409,4 @@
 [#99]: https://github.com/dreikanter/notes-cli/pull/99
 [#100]: https://github.com/dreikanter/notes-cli/pull/100
 [#102]: https://github.com/dreikanter/notes-cli/pull/102
-[#104]: https://github.com/dreikanter/notes-cli/pull/104
+[#106]: https://github.com/dreikanter/notes-cli/pull/106
