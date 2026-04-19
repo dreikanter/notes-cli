@@ -60,20 +60,10 @@ var updateCmd = &cobra.Command{
 			return fmt.Errorf("cannot read note: %w", err)
 		}
 
-		existing, body, err := note.ParseNote(data)
+		updated, body, err := note.ParseNote(data)
 		if err != nil {
 			return fmt.Errorf("%s: %w", oldPath, err)
 		}
-
-		// frontmatter is canonical; filename values are fallbacks only.
-		if existing.Slug == "" {
-			existing.Slug = n.Slug
-		}
-		if existing.Type == "" {
-			existing.Type = n.Type
-		}
-
-		updated := existing // includes preserved Extra
 
 		if cmd.Flags().Changed("title") {
 			updated.Title = updateTitle
@@ -119,13 +109,32 @@ var updateCmd = &cobra.Command{
 		}
 
 		// --sync-filename: reconcile filename to match (already-updated) frontmatter.
+		// When frontmatter is silent on slug/type AND the user didn't touch
+		// those flags, fall back to the filename-reported value so the rename
+		// is a no-op instead of stripping a still-valid cache suffix.
 		newPath := oldPath
 		if syncFilename {
-			id, _ := strconv.Atoi(n.ID)
-			newFilename := note.NoteFilename(n.Date, id, updated.Slug, updated.Type)
+			id, err := strconv.Atoi(n.ID)
+			if err != nil {
+				return fmt.Errorf("invalid note id %q: %w", n.ID, err)
+			}
+			syncSlug := updated.Slug
+			if syncSlug == "" && !cmd.Flags().Changed("slug") && !updateNoSlug {
+				syncSlug = n.Slug
+			}
+			syncType := updated.Type
+			if syncType == "" && !cmd.Flags().Changed("type") && !updateNoType {
+				syncType = n.Type
+			}
+			newFilename := note.NoteFilename(n.Date, id, syncSlug, syncType)
 			dir := filepath.Dir(oldPath)
 			newPath = filepath.Join(dir, newFilename)
 			if newPath != oldPath {
+				if _, err := os.Stat(newPath); err == nil {
+					return fmt.Errorf("target note already exists: %s", newPath)
+				} else if !os.IsNotExist(err) {
+					return fmt.Errorf("cannot stat target note: %w", err)
+				}
 				if err := os.Rename(oldPath, newPath); err != nil {
 					return fmt.Errorf("cannot rename note: %w", err)
 				}

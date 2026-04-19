@@ -517,6 +517,28 @@ func TestUpdatePreservesExtraFields(t *testing.T) {
 	}
 }
 
+// TestUpdateDoesNotPromoteFilenameSlugToFrontmatter: an ordinary --title update
+// on a note whose filename carries a slug but whose frontmatter doesn't must
+// leave the frontmatter's absent slug absent. Frontmatter is canonical.
+func TestUpdateDoesNotPromoteFilenameSlugToFrontmatter(t *testing.T) {
+	root := copyTestdata(t)
+	notePath := filepath.Join(root, "2026/01/20260106_8823_999.md")
+	// Seed with no slug/type in frontmatter; filename still has slug "999".
+	seed := "---\ntitle: Original\n---\n\nbody\n"
+	if err := os.WriteFile(notePath, []byte(seed), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := runUpdate(t, root, "8823", "--title", "New"); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	data, _ := os.ReadFile(notePath)
+	if strings.Contains(string(data), "slug:") {
+		t.Errorf("filename slug must not be promoted into frontmatter, got:\n%s", string(data))
+	}
+}
+
 // TestUpdateSyncFilenameOnly reconciles filename without any content flags.
 func TestUpdateSyncFilenameOnly(t *testing.T) {
 	root := copyTestdata(t)
