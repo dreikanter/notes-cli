@@ -70,13 +70,30 @@ func TestParseFilename(t *testing.T) {
 			wantBaseName: "20260312_9219",
 		},
 		{
-			name:         "unknown dot suffix treated as slug",
+			name:         "unknown dot suffix treated as filename-reported type",
 			input:        "20260312_9219_foo.bar",
 			wantDate:     "20260312",
 			wantID:       "9219",
-			wantSlug:     "foo.bar",
-			wantType:     "",
-			wantBaseName: "20260312_9219_foo.bar",
+			wantSlug:     "foo",
+			wantType:     "bar",
+			wantBaseName: "20260312_9219_foo",
+		},
+		{
+			// Multi-dot basenames can't come from NoteFilename (unsafe types
+			// are omitted), so a stray '.' in the prefix means the suffix is
+			// not a cached type — leave Type empty.
+			name:    "multi-dot basename rejects suffix as type",
+			input:   "20260312_9219.foo.bar",
+			wantErr: true,
+		},
+		{
+			name:         "custom type name (no registry gate)",
+			input:        "20260106_8823.meeting",
+			wantDate:     "20260106",
+			wantID:       "8823",
+			wantSlug:     "",
+			wantType:     "meeting",
+			wantBaseName: "20260106_8823",
 		},
 		{
 			name:    "missing parts",
@@ -159,20 +176,20 @@ func TestParseFilename(t *testing.T) {
 	}
 }
 
-func TestIsKnownType(t *testing.T) {
-	if !IsKnownType("todo") {
-		t.Error("expected todo to be a known type")
+func TestHasSpecialBehavior(t *testing.T) {
+	if !HasSpecialBehavior("todo") {
+		t.Error("expected todo to have special behavior")
 	}
-	if !IsKnownType("backlog") {
-		t.Error("expected backlog to be a known type")
+	if !HasSpecialBehavior("backlog") {
+		t.Error("expected backlog to have special behavior")
 	}
-	if !IsKnownType("weekly") {
-		t.Error("expected weekly to be a known type")
+	if !HasSpecialBehavior("weekly") {
+		t.Error("expected weekly to have special behavior")
 	}
-	if IsKnownType("random") {
-		t.Error("expected random to not be a known type")
+	if HasSpecialBehavior("random") {
+		t.Error("expected random to have no special behavior")
 	}
-	if IsKnownType("") {
-		t.Error("expected empty string to not be a known type")
+	if HasSpecialBehavior("") {
+		t.Error("expected empty string to have no special behavior")
 	}
 }

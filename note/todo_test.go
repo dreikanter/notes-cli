@@ -269,6 +269,10 @@ func TestNoteFilename(t *testing.T) {
 		{"20260312", 9219, "", "todo", "20260312_9219.todo.md"},
 		{"20260312", 9219, "standup", "todo", "20260312_9219_standup.todo.md"},
 		{"20260312", 9219, "", "backlog", "20260312_9219.backlog.md"},
+		// Unsafe types are omitted from the filename (frontmatter remains canonical).
+		{"20260312", 9219, "", "foo.bar", "20260312_9219.md"},
+		{"20260312", 9219, "", "a/b", "20260312_9219.md"},
+		{"20260312", 9219, "", `a\b`, "20260312_9219.md"},
 	}
 
 	for _, tt := range tests {

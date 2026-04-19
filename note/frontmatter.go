@@ -3,26 +3,170 @@ package note
 import (
 	"bytes"
 	"fmt"
-	"reflect"
+	"sort"
 
 	"gopkg.in/yaml.v3"
 )
 
 const frontmatterDelim = "---"
 
+func yamlKindName(k yaml.Kind) string {
+	switch k {
+	case yaml.DocumentNode:
+		return "document"
+	case yaml.SequenceNode:
+		return "sequence"
+	case yaml.MappingNode:
+		return "mapping"
+	case yaml.ScalarNode:
+		return "scalar"
+	case yaml.AliasNode:
+		return "alias"
+	}
+	return fmt.Sprintf("kind(%d)", k)
+}
+
 // Frontmatter holds optional fields for note frontmatter.
 // Adding a field is a one-line struct addition — no other changes required.
 type Frontmatter struct {
-	Title       string   `yaml:"title,omitempty"`
-	Slug        string   `yaml:"slug,omitempty"`
-	Tags        []string `yaml:"tags,omitempty"`
-	Description string   `yaml:"description,omitempty"`
-	Public      bool     `yaml:"public,omitempty"`
+	Title       string               `yaml:"title,omitempty"`
+	Slug        string               `yaml:"slug,omitempty"`
+	Type        string               `yaml:"type,omitempty"`
+	Tags        []string             `yaml:"tags,omitempty"`
+	Description string               `yaml:"description,omitempty"`
+	Public      bool                 `yaml:"public,omitempty"`
+	Extra       map[string]yaml.Node `yaml:"-"`
 }
 
-// IsZero reports whether f has no fields set.
+// IsZero reports whether f has no fields set, including Extra.
 func (f Frontmatter) IsZero() bool {
-	return reflect.ValueOf(f).IsZero()
+	return f.Title == "" && f.Slug == "" && f.Type == "" && len(f.Tags) == 0 &&
+		f.Description == "" && !f.Public && len(f.Extra) == 0
+}
+
+// UnmarshalYAML decodes a mapping node into f. Reserved keys populate the
+// typed fields; unknown keys are captured in f.Extra as yaml.Node values.
+// Duplicate top-level keys and non-scalar keys are rejected.
+func (f *Frontmatter) UnmarshalYAML(node *yaml.Node) error {
+	if node.Kind != yaml.MappingNode {
+		return fmt.Errorf("frontmatter: expected mapping, got %s", yamlKindName(node.Kind))
+	}
+	seen := make(map[string]bool, len(node.Content)/2)
+	for i := 0; i+1 < len(node.Content); i += 2 {
+		key, value := node.Content[i], node.Content[i+1]
+		if key.Kind != yaml.ScalarNode {
+			return fmt.Errorf("frontmatter: non-scalar key (%s)", yamlKindName(key.Kind))
+		}
+		if seen[key.Value] {
+			return fmt.Errorf("frontmatter: duplicate key %q", key.Value)
+		}
+		seen[key.Value] = true
+		switch key.Value {
+		case "title":
+			if err := value.Decode(&f.Title); err != nil {
+				return fmt.Errorf("frontmatter title: %w", err)
+			}
+		case "slug":
+			if err := value.Decode(&f.Slug); err != nil {
+				return fmt.Errorf("frontmatter slug: %w", err)
+			}
+		case "type":
+			if err := value.Decode(&f.Type); err != nil {
+				return fmt.Errorf("frontmatter type: %w", err)
+			}
+		case "tags":
+			if err := value.Decode(&f.Tags); err != nil {
+				return fmt.Errorf("frontmatter tags: %w", err)
+			}
+		case "description":
+			if err := value.Decode(&f.Description); err != nil {
+				return fmt.Errorf("frontmatter description: %w", err)
+			}
+		case "public":
+			if err := value.Decode(&f.Public); err != nil {
+				return fmt.Errorf("frontmatter public: %w", err)
+			}
+		default:
+			if f.Extra == nil {
+				f.Extra = make(map[string]yaml.Node)
+			}
+			f.Extra[key.Value] = *value
+		}
+	}
+	return nil
+}
+
+// MarshalYAML composes a mapping node with reserved fields first (in fixed
+// order) and Extra keys alpha-sorted. Zero-valued reserved fields are omitted,
+// matching the `omitempty` struct-tag discipline.
+func (f Frontmatter) MarshalYAML() (interface{}, error) {
+	node := &yaml.Node{Kind: yaml.MappingNode}
+
+	// Encode cannot fail for string/[]string/bool — matches the panic-on-
+	// impossible stance FormatNote takes for yaml.Marshal.
+	appendString := func(key, value string) {
+		if value == "" {
+			return
+		}
+		valNode := &yaml.Node{}
+		if err := valNode.Encode(value); err != nil {
+			panic(fmt.Sprintf("yaml encode string %q: %v", key, err))
+		}
+		node.Content = append(node.Content,
+			&yaml.Node{Kind: yaml.ScalarNode, Value: key},
+			valNode,
+		)
+	}
+	appendList := func(key string, value []string) {
+		if len(value) == 0 {
+			return
+		}
+		valNode := &yaml.Node{}
+		if err := valNode.Encode(value); err != nil {
+			panic(fmt.Sprintf("yaml encode list %q: %v", key, err))
+		}
+		node.Content = append(node.Content,
+			&yaml.Node{Kind: yaml.ScalarNode, Value: key},
+			valNode,
+		)
+	}
+	appendBool := func(key string, value bool) {
+		if !value {
+			return
+		}
+		valNode := &yaml.Node{}
+		if err := valNode.Encode(value); err != nil {
+			panic(fmt.Sprintf("yaml encode bool %q: %v", key, err))
+		}
+		node.Content = append(node.Content,
+			&yaml.Node{Kind: yaml.ScalarNode, Value: key},
+			valNode,
+		)
+	}
+
+	appendString("title", f.Title)
+	appendString("slug", f.Slug)
+	appendString("type", f.Type)
+	appendList("tags", f.Tags)
+	appendString("description", f.Description)
+	appendBool("public", f.Public)
+
+	if len(f.Extra) > 0 {
+		keys := make([]string, 0, len(f.Extra))
+		for k := range f.Extra {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
+		for _, k := range keys {
+			v := f.Extra[k]
+			node.Content = append(node.Content,
+				&yaml.Node{Kind: yaml.ScalarNode, Value: k},
+				&v,
+			)
+		}
+	}
+
+	return node, nil
 }
 
 // ParseNote splits a note file into its frontmatter and body.

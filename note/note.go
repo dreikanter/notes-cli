@@ -6,12 +6,14 @@ import (
 	"strings"
 )
 
-// KnownTypes lists the well-known note types encoded as secondary file extensions.
-var KnownTypes = []string{"todo", "backlog", "weekly"}
+// TypesWithSpecialBehavior lists note types that trigger notes-cli-specific
+// handling (e.g., daily rollover, weekly review conventions). Any string is a
+// valid `type` value; this list is a soft registry, not a validation gate.
+var TypesWithSpecialBehavior = []string{"todo", "backlog", "weekly"}
 
-// IsKnownType reports whether s is a recognized note type.
-func IsKnownType(s string) bool {
-	for _, t := range KnownTypes {
+// HasSpecialBehavior reports whether s is a type with special notes-cli behavior.
+func HasSpecialBehavior(s string) bool {
+	for _, t := range TypesWithSpecialBehavior {
 		if s == t {
 			return true
 		}
@@ -25,23 +27,35 @@ type Note struct {
 	Date     string // date as Y...YMMDD, e.g. "20260106"
 	ID       string // "8823"
 	Slug     string // descriptive slug, e.g. "api-redesign", or ""
-	Type     string // known type from file extension, e.g. "todo", "backlog", or ""
+	Type     string // type reported by the filename dot-suffix; any string accepted. Frontmatter type is canonical when available.
 	BaseName string // filename without extensions, e.g. "20260106_8823" or "20260102_8814_standup"
+}
+
+// isFilenameCacheSafeType reports whether a note type can round-trip through
+// the filename-suffix cache. Values containing '.', '/', or '\' cannot —
+// ParseFilename would mis-split them — so we omit them from the filename
+// entirely and rely on frontmatter as canonical.
+func isFilenameCacheSafeType(noteType string) bool {
+	return noteType != "" && !strings.ContainsAny(noteType, `./\`)
 }
 
 // ParseFilename parses a note base filename (without .md extension) into its components.
 // Expected format: Y...YMMDD_ID[_slug][.TYPE], where MM and DD are zero-padded.
-// If the base name ends with a known type suffix (e.g. ".todo"), it is extracted as the Type.
+// The dot-suffix is extracted as the filename-reported Type only when it round-
+// trips cleanly (see isFilenameCacheSafeType). Frontmatter `type` is canonical.
 func ParseFilename(baseName string) (Note, error) {
 	noteType := ""
 	remaining := baseName
 
-	// Check for known type as a dot-suffix, e.g. "20260102_8814.todo"
+	// Only treat the dot-suffix as a type if the remaining base is itself
+	// dot-free — i.e. the suffix round-trips through NoteFilename. Otherwise
+	// leave Type empty and let the caller rely on frontmatter.
 	if idx := strings.LastIndex(baseName, "."); idx >= 0 {
 		suffix := baseName[idx+1:]
-		if IsKnownType(suffix) {
+		prefix := baseName[:idx]
+		if isFilenameCacheSafeType(suffix) && !strings.Contains(prefix, ".") {
 			noteType = suffix
-			remaining = baseName[:idx]
+			remaining = prefix
 		}
 	}
 
@@ -75,13 +89,15 @@ func ParseFilename(baseName string) (Note, error) {
 }
 
 // NoteFilename generates a note filename from date, id, optional slug, and optional type.
-// Type is encoded as a secondary file extension (e.g. ".todo.md").
+// Type is encoded as a secondary file extension (e.g. ".todo.md") only when it's
+// safe to round-trip through ParseFilename; values with '.' or path separators
+// are omitted from the filename, with frontmatter remaining canonical.
 func NoteFilename(date string, id int, slug, noteType string) string {
 	base := fmt.Sprintf("%s_%d", date, id)
 	if slug != "" {
 		base = fmt.Sprintf("%s_%s", base, slug)
 	}
-	if noteType != "" {
+	if isFilenameCacheSafeType(noteType) {
 		return base + "." + noteType + ".md"
 	}
 	return base + ".md"

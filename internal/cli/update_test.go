@@ -16,12 +16,13 @@ func runUpdate(t *testing.T, root string, args ...string) (string, error) {
 	updateCmd.Flags().Bool("no-tags", false, "remove all tags from frontmatter")
 	updateCmd.Flags().String("title", "", "title for frontmatter (empty string clears it)")
 	updateCmd.Flags().String("description", "", "description for frontmatter (empty string clears it)")
-	updateCmd.Flags().String("slug", "", "update slug and rename file")
-	updateCmd.Flags().Bool("no-slug", false, "remove slug from filename")
-	updateCmd.Flags().String("type", "", "update note type and rename file (todo, backlog, weekly)")
-	updateCmd.Flags().Bool("no-type", false, "remove type suffix from filename")
+	updateCmd.Flags().String("slug", "", "update slug in frontmatter; does not rename the file")
+	updateCmd.Flags().Bool("no-slug", false, "remove slug from frontmatter")
+	updateCmd.Flags().String("type", "", "update type in frontmatter; does not rename the file")
+	updateCmd.Flags().Bool("no-type", false, "remove type from frontmatter")
 	updateCmd.Flags().Bool("public", false, "mark note as public in frontmatter")
 	updateCmd.Flags().Bool("private", false, "mark note as private in frontmatter")
+	updateCmd.Flags().Bool("sync-filename", false, "rename the file to match the frontmatter's slug/type cache")
 	updateCmd.MarkFlagsMutuallyExclusive("slug", "no-slug")
 	updateCmd.MarkFlagsMutuallyExclusive("type", "no-type")
 	updateCmd.MarkFlagsMutuallyExclusive("tag", "no-tags")
@@ -73,19 +74,38 @@ func TestUpdateNoTags(t *testing.T) {
 	}
 }
 
-// TestUpdateSlugRenamesFile updates slug and renames the file.
-func TestUpdateSlugRenamesFile(t *testing.T) {
+// TestUpdateSlugChangesFrontmatterOnly: --slug rewrites frontmatter but leaves filename.
+func TestUpdateSlugChangesFrontmatterOnly(t *testing.T) {
 	root := copyTestdata(t)
+	origPath := filepath.Join(root, "2026/01/20260106_8823_999.md")
+
 	out, err := runUpdate(t, root, "8823", "--slug", "renamed")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if out != origPath {
+		t.Errorf("got path %q, want %q (should not rename)", out, origPath)
+	}
+	if _, err := os.Stat(origPath); err != nil {
+		t.Errorf("original file missing: %v", err)
+	}
+	data, _ := os.ReadFile(origPath)
+	if !strings.Contains(string(data), "slug: renamed") {
+		t.Errorf("expected updated slug in frontmatter, got:\n%s", string(data))
+	}
+}
 
+// TestUpdateSlugWithSyncFilenameRenames: --slug + --sync-filename renames the file.
+func TestUpdateSlugWithSyncFilenameRenames(t *testing.T) {
+	root := copyTestdata(t)
+	out, err := runUpdate(t, root, "8823", "--slug", "renamed", "--sync-filename")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	want := filepath.Join(root, "2026/01/20260106_8823_renamed.md")
 	if out != want {
 		t.Errorf("got path %q, want %q", out, want)
 	}
-
 	if _, err := os.Stat(want); err != nil {
 		t.Errorf("new file does not exist: %v", err)
 	}
@@ -94,53 +114,109 @@ func TestUpdateSlugRenamesFile(t *testing.T) {
 	}
 }
 
-// TestUpdateNoSlugRemovesSlugFromFilename drops the slug and renames the file.
-func TestUpdateNoSlugRemovesSlugFromFilename(t *testing.T) {
+// TestUpdateNoSlugClearsSlugFromFrontmatter: --no-slug removes slug from frontmatter only.
+func TestUpdateNoSlugClearsSlugFromFrontmatter(t *testing.T) {
 	root := copyTestdata(t)
-	// 8818 has slug "meeting"
+	origPath := filepath.Join(root, "2026/01/20260104_8818_meeting.md")
+
 	out, err := runUpdate(t, root, "8818", "--no-slug")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if out != origPath {
+		t.Errorf("got path %q, want %q (should not rename)", out, origPath)
+	}
+	data, _ := os.ReadFile(origPath)
+	if strings.Contains(string(data), "slug:") {
+		t.Errorf("expected slug removed, got:\n%s", string(data))
+	}
+}
 
+// TestUpdateNoSlugWithSyncFilenameRenames: --no-slug + --sync-filename renames file.
+func TestUpdateNoSlugWithSyncFilenameRenames(t *testing.T) {
+	root := copyTestdata(t)
+	out, err := runUpdate(t, root, "8818", "--no-slug", "--sync-filename")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	want := filepath.Join(root, "2026/01/20260104_8818.md")
 	if out != want {
 		t.Errorf("got path %q, want %q", out, want)
-	}
-	if _, err := os.Stat(want); err != nil {
-		t.Errorf("new file does not exist: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(root, "2026/01/20260104_8818_meeting.md")); err == nil {
 		t.Error("old file should have been removed")
 	}
 }
 
-// TestUpdateTypeRenamesFile adds a type suffix and renames the file.
-func TestUpdateTypeRenamesFile(t *testing.T) {
+// TestUpdateTypeChangesFrontmatterOnly: --type rewrites frontmatter but leaves filename.
+func TestUpdateTypeChangesFrontmatterOnly(t *testing.T) {
 	root := copyTestdata(t)
+	origPath := filepath.Join(root, "2026/01/20260106_8823_999.md")
+
 	out, err := runUpdate(t, root, "8823", "--type", "todo")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if out != origPath {
+		t.Errorf("got path %q, want %q (should not rename)", out, origPath)
+	}
+	if _, err := os.Stat(origPath); err != nil {
+		t.Errorf("original file missing: %v", err)
+	}
+	data, _ := os.ReadFile(origPath)
+	if !strings.Contains(string(data), "type: todo") {
+		t.Errorf("expected updated type in frontmatter, got:\n%s", string(data))
+	}
+}
 
+// TestUpdateTypeWithSyncFilenameRenames: --type + --sync-filename renames the file.
+func TestUpdateTypeWithSyncFilenameRenames(t *testing.T) {
+	root := copyTestdata(t)
+	out, err := runUpdate(t, root, "8823", "--type", "todo", "--sync-filename")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	want := filepath.Join(root, "2026/01/20260106_8823_999.todo.md")
 	if out != want {
 		t.Errorf("got path %q, want %q", out, want)
+	}
+	if _, err := os.Stat(want); err != nil {
+		t.Errorf("new file does not exist: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(root, "2026/01/20260106_8823_999.md")); err == nil {
 		t.Error("old file should have been removed")
 	}
 }
 
-// TestUpdateNoTypeRemovesTypeSuffix drops the type suffix and renames the file.
-func TestUpdateNoTypeRemovesTypeSuffix(t *testing.T) {
+// TestUpdateNoTypeClearsTypeFromFrontmatter: --no-type clears frontmatter type only.
+func TestUpdateNoTypeClearsTypeFromFrontmatter(t *testing.T) {
 	root := copyTestdata(t)
-	// 8814 has type "todo"
+	// 8814 has type "todo" reported by filename (no fm type).
+	origPath := filepath.Join(root, "2026/01/20260102_8814.todo.md")
+
 	out, err := runUpdate(t, root, "8814", "--no-type")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if out != origPath {
+		t.Errorf("got path %q, want %q (should not rename)", out, origPath)
+	}
+	if _, err := os.Stat(origPath); err != nil {
+		t.Errorf("original file missing: %v", err)
+	}
+	data, _ := os.ReadFile(origPath)
+	if strings.Contains(string(data), "type:") {
+		t.Errorf("expected type removed, got:\n%s", string(data))
+	}
+}
 
+// TestUpdateNoTypeWithSyncFilenameRenames: --no-type + --sync-filename renames file.
+func TestUpdateNoTypeWithSyncFilenameRenames(t *testing.T) {
+	root := copyTestdata(t)
+	out, err := runUpdate(t, root, "8814", "--no-type", "--sync-filename")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 	want := filepath.Join(root, "2026/01/20260102_8814.md")
 	if out != want {
 		t.Errorf("got path %q, want %q", out, want)
@@ -215,15 +291,6 @@ func TestUpdateNonExistentNoteErrors(t *testing.T) {
 	_, err := runUpdate(t, root, "9999", "--tag", "x")
 	if err == nil {
 		t.Fatal("expected error for non-existent note, got nil")
-	}
-}
-
-// TestUpdateInvalidTypeErrors returns an error for an unknown note type.
-func TestUpdateInvalidTypeErrors(t *testing.T) {
-	root := copyTestdata(t)
-	_, err := runUpdate(t, root, "8823", "--type", "invalid")
-	if err == nil {
-		t.Fatal("expected error for unknown note type, got nil")
 	}
 }
 
@@ -421,5 +488,98 @@ func TestUpdateNoPublicFlagPreservesPublicField(t *testing.T) {
 	}
 	if !strings.Contains(string(data), "public: true") {
 		t.Errorf("expected public: true preserved after unrelated update, got:\n%s", string(data))
+	}
+}
+
+// TestUpdatePreservesExtraFields ensures unknown frontmatter keys survive an update.
+func TestUpdatePreservesExtraFields(t *testing.T) {
+	root := copyTestdata(t)
+	// Pick an existing fixture note, overwrite its content to include custom keys.
+	notePath := filepath.Join(root, "2026/01/20260106_8823_999.md")
+	seed := "---\ntitle: Original\nfeatured: true\ncustom_rating: 5\n---\n\nbody\n"
+	if err := os.WriteFile(notePath, []byte(seed), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := runUpdate(t, root, "8823", "--title", "New Title"); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	data, _ := os.ReadFile(notePath)
+	if !strings.Contains(string(data), "title: New Title") {
+		t.Errorf("expected new title, got:\n%s", string(data))
+	}
+	if !strings.Contains(string(data), "featured: true") {
+		t.Errorf("featured dropped, got:\n%s", string(data))
+	}
+	if !strings.Contains(string(data), "custom_rating: 5") {
+		t.Errorf("custom_rating dropped, got:\n%s", string(data))
+	}
+}
+
+// TestUpdateDoesNotPromoteFilenameSlugToFrontmatter: an ordinary --title update
+// on a note whose filename carries a slug but whose frontmatter doesn't must
+// leave the frontmatter's absent slug absent. Frontmatter is canonical.
+func TestUpdateDoesNotPromoteFilenameSlugToFrontmatter(t *testing.T) {
+	root := copyTestdata(t)
+	notePath := filepath.Join(root, "2026/01/20260106_8823_999.md")
+	// Seed with no slug/type in frontmatter; filename still has slug "999".
+	seed := "---\ntitle: Original\n---\n\nbody\n"
+	if err := os.WriteFile(notePath, []byte(seed), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := runUpdate(t, root, "8823", "--title", "New"); err != nil {
+		t.Fatalf("update: %v", err)
+	}
+
+	data, _ := os.ReadFile(notePath)
+	if strings.Contains(string(data), "slug:") {
+		t.Errorf("filename slug must not be promoted into frontmatter, got:\n%s", string(data))
+	}
+}
+
+// TestUpdateSyncFilenameOnly reconciles filename without any content flags.
+func TestUpdateSyncFilenameOnly(t *testing.T) {
+	root := copyTestdata(t)
+	// Seed a note whose frontmatter slug disagrees with its filename.
+	dir := filepath.Join(root, "2026", "01")
+	origPath := filepath.Join(dir, "20260106_8823_999.md")
+	seed := "---\ntitle: T\nslug: my-slug\ntype: meeting\n---\n\nbody\n"
+	if err := os.WriteFile(origPath, []byte(seed), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out, err := runUpdate(t, root, "8823", "--sync-filename")
+	if err != nil {
+		t.Fatalf("--sync-filename: %v", err)
+	}
+	want := filepath.Join(dir, "20260106_8823_my-slug.meeting.md")
+	if out != want {
+		t.Errorf("got path %q, want %q", out, want)
+	}
+	if _, err := os.Stat(want); err != nil {
+		t.Errorf("new file missing: %v", err)
+	}
+	if _, err := os.Stat(origPath); !os.IsNotExist(err) {
+		t.Errorf("old file should be gone: err=%v", err)
+	}
+}
+
+// TestUpdateSyncFilenameNoOp: --sync-filename on an already-in-sync note is a no-op.
+func TestUpdateSyncFilenameNoOp(t *testing.T) {
+	root := copyTestdata(t)
+	origPath := filepath.Join(root, "2026/01/20260106_8823_999.md")
+	// The fixture has empty fm slug; the filename-reported slug is "999" and
+	// fills in as fallback. Running sync should produce the same filename.
+	out, err := runUpdate(t, root, "8823", "--sync-filename")
+	if err != nil {
+		t.Fatalf("--sync-filename: %v", err)
+	}
+	if out != origPath {
+		t.Errorf("expected no rename, got path %q", out)
+	}
+	if _, err := os.Stat(origPath); err != nil {
+		t.Errorf("file moved or lost: %v", err)
 	}
 }
