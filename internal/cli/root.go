@@ -27,7 +27,7 @@ func init() {
 		}
 	}
 	rootCmd.Version = Version
-	rootCmd.PersistentFlags().StringVar(&notesPath, "path", "", "path to notes store (overrides NOTES_PATH env var)")
+	rootCmd.PersistentFlags().StringVar(&notesPath, "path", "", "path to notes store (default: $NOTES_PATH or ~/notes)")
 }
 
 func Execute() {
