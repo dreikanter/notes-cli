@@ -63,12 +63,10 @@ func ExtractTags(root string) ([]string, error) {
 				fm, body, parseErr := ParseNote(data)
 				if parseErr != nil {
 					log.Printf("warn: %s: %v", path, parseErr)
-					body = StripFrontmatter(data)
-				} else {
-					for _, t := range fm.Tags {
-						if t != "" {
-							local[t] = struct{}{}
-						}
+				}
+				for _, t := range fm.Tags {
+					if t != "" {
+						local[t] = struct{}{}
 					}
 				}
 				for _, t := range extractHashtags(body) {

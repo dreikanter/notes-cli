@@ -96,17 +96,27 @@ func TestParseNoteErrors(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			f, body, err := ParseNote([]byte(tt.input))
+			f, _, err := ParseNote([]byte(tt.input))
 			if err == nil {
-				t.Fatalf("expected error, got f=%+v body=%q", f, string(body))
+				t.Fatalf("expected error, got f=%+v", f)
 			}
 			if !f.IsZero() {
 				t.Errorf("expected zero Frontmatter on error, got %+v", f)
 			}
-			if body != nil {
-				t.Errorf("expected nil body on error, got %q", string(body))
-			}
 		})
+	}
+}
+
+// On parse error the body is still returned as a sub-slice so bulk readers
+// can fall back to body-only processing (e.g. body hashtags still collected).
+func TestParseNoteErrorStillReturnsBody(t *testing.T) {
+	input := []byte("---\npublic: maybe\n---\n\n# Content\n")
+	_, body, err := ParseNote(input)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if string(body) != "# Content\n" {
+		t.Errorf("body = %q, want %q", string(body), "# Content\n")
 	}
 }
 

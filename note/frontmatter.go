@@ -29,8 +29,9 @@ func (f Frontmatter) IsZero() bool {
 // If no frontmatter block is present, the zero Frontmatter is returned along
 // with the full input as body and a nil error.
 // If the frontmatter block is present but malformed, a non-nil error is
-// returned along with the zero Frontmatter and a nil body.
-// The returned body is a sub-slice of the input — no allocation.
+// returned along with the zero Frontmatter; the body is still returned as
+// a sub-slice so bulk readers can fall back to body-only processing.
+// The returned body is always a sub-slice of the input — no allocation.
 func ParseNote(data []byte) (Frontmatter, []byte, error) {
 	bodyStart, fmEnd, ok := frontmatterEnd(data)
 	if !ok {
@@ -39,7 +40,7 @@ func ParseNote(data []byte) (Frontmatter, []byte, error) {
 	yamlStart := len(frontmatterDelim) + 1
 	var f Frontmatter
 	if err := yaml.Unmarshal(data[yamlStart:fmEnd], &f); err != nil {
-		return Frontmatter{}, nil, fmt.Errorf("parse frontmatter: %w", err)
+		return Frontmatter{}, data[bodyStart:], fmt.Errorf("parse frontmatter: %w", err)
 	}
 	return f, data[bodyStart:], nil
 }
@@ -55,10 +56,12 @@ func FormatNote(f Frontmatter, body []byte) []byte {
 	if err != nil {
 		panic(fmt.Sprintf("yaml.Marshal Frontmatter: %v", err))
 	}
-	buf := make([]byte, 0, len(out)+len(body)+8)
-	buf = append(buf, "---\n"...)
+	const prefix = "---\n"
+	const suffix = "---\n\n"
+	buf := make([]byte, 0, len(prefix)+len(out)+len(suffix)+len(body))
+	buf = append(buf, prefix...)
 	buf = append(buf, out...)
-	buf = append(buf, "---\n\n"...)
+	buf = append(buf, suffix...)
 	buf = append(buf, body...)
 	return buf
 }
