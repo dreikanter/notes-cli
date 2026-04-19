@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestFrontmatterIsZero(t *testing.T) {
@@ -15,7 +17,7 @@ func TestFrontmatterIsZero(t *testing.T) {
 		{"empty", Frontmatter{}, true},
 		{"title set", Frontmatter{Title: "T"}, false},
 		{"slug set", Frontmatter{Slug: "s"}, false},
-		{"tags empty slice not zero", Frontmatter{Tags: []string{}}, false},
+		{"tags empty slice is zero", Frontmatter{Tags: []string{}}, true},
 		{"tags with value", Frontmatter{Tags: []string{"a"}}, false},
 		{"description set", Frontmatter{Description: "d"}, false},
 		{"public true", Frontmatter{Public: true}, false},
@@ -53,7 +55,6 @@ func TestParseNoteSuccess(t *testing.T) {
 		{"unclosed frontmatter treated as no frontmatter", "---\ntitle: Oops\n# Content\n", Frontmatter{}, "---\ntitle: Oops\n# Content\n"},
 		{"int coerced to string", "---\ntitle: 12345\n---\n", Frontmatter{Title: "12345"}, ""},
 		{"null leaves field empty", "---\ntitle: null\nslug: s\n---\n", Frontmatter{Slug: "s"}, ""},
-		{"unknown keys ignored", "---\ntitle: T\nrandom: whatever\nnested: {a: 1}\n---\n", Frontmatter{Title: "T"}, ""},
 		{"empty frontmatter block", "---\n---\n\nBody\n", Frontmatter{}, "Body\n"},
 	}
 	for _, tt := range tests {
@@ -246,5 +247,70 @@ func TestFormatNoteWritesLFOnly(t *testing.T) {
 	}
 	if string(out[len(wantPrefix):]) != "hello\r\nworld\r\n" {
 		t.Errorf("body modified: %q", string(out[len(wantPrefix):]))
+	}
+}
+
+func TestParseNoteExtraPreservesUnknownKeys(t *testing.T) {
+	in := []byte("---\ntitle: T\nfeatured: true\ncustom: hello\n---\n\nbody\n")
+	fm, body, err := ParseNote(in)
+	if err != nil {
+		t.Fatalf("ParseNote: %v", err)
+	}
+	if fm.Title != "T" {
+		t.Errorf("Title = %q, want %q", fm.Title, "T")
+	}
+	if string(body) != "body\n" {
+		t.Errorf("body = %q, want %q", string(body), "body\n")
+	}
+	if _, ok := fm.Extra["featured"]; !ok {
+		t.Error("Extra missing key 'featured'")
+	}
+	if _, ok := fm.Extra["custom"]; !ok {
+		t.Error("Extra missing key 'custom'")
+	}
+	featuredNode := fm.Extra["featured"]
+	var featured bool
+	if err := featuredNode.Decode(&featured); err != nil {
+		t.Fatalf("decode featured: %v", err)
+	}
+	if !featured {
+		t.Errorf("featured = %v, want true", featured)
+	}
+}
+
+func TestFormatNoteExtraPreservedInAlphaOrder(t *testing.T) {
+	in := []byte("---\ntitle: T\nzebra: striped\nalpha: 1\nfeatured: true\n---\n\nbody\n")
+	fm, body, err := ParseNote(in)
+	if err != nil {
+		t.Fatalf("ParseNote: %v", err)
+	}
+	out := string(FormatNote(fm, body))
+	// Reserved "title" first; Extra keys alpha-sorted: alpha, featured, zebra.
+	want := "---\ntitle: T\nalpha: 1\nfeatured: true\nzebra: striped\n---\n\nbody\n"
+	if out != want {
+		t.Errorf("FormatNote =\n%q\nwant:\n%q", out, want)
+	}
+}
+
+func TestFormatNoteEmptyFrontmatterWithExtraOnly(t *testing.T) {
+	fm := Frontmatter{Extra: map[string]yaml.Node{
+		"featured": {Kind: yaml.ScalarNode, Value: "true", Tag: "!!bool"},
+	}}
+	want := "---\nfeatured: true\n---\n\nbody\n"
+	got := string(FormatNote(fm, []byte("body\n")))
+	if got != want {
+		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func TestIsZeroIncludesExtra(t *testing.T) {
+	if (Frontmatter{}).IsZero() == false {
+		t.Error("empty Frontmatter should be zero")
+	}
+	fm := Frontmatter{Extra: map[string]yaml.Node{
+		"featured": {Kind: yaml.ScalarNode, Value: "true", Tag: "!!bool"},
+	}}
+	if fm.IsZero() {
+		t.Error("Frontmatter with Extra should not be zero")
 	}
 }
