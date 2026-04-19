@@ -24,8 +24,9 @@ With a positional argument, resolution follows this priority:
   4. Slug substring — most recent note whose slug contains the query
 
 Alternatively, use filter flags (--type, --slug, --tag, --today) for
-explicit attribute-based lookup. Flags cannot be combined with a
-positional argument.`,
+explicit attribute-based lookup. --type, --slug, and --tag cannot be
+combined with a positional argument; --today can, and restricts the
+positional resolution to notes dated today.`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		root := mustNotesPath()

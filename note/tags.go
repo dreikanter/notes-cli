@@ -3,7 +3,7 @@ package note
 import (
 	"bytes"
 	"context"
-	"log"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -17,7 +17,7 @@ import (
 // deduplicated list of tags. Sources: frontmatter `tags:` fields and body
 // hashtags (#word) in the prose. File reads run concurrently across
 // runtime.NumCPU() workers. Returns a nil slice for an empty store.
-// A per-note frontmatter parse error is logged via log.Printf and the
+// A per-note frontmatter parse error is written to stderr and the
 // note's frontmatter tags are skipped (body hashtags are still collected).
 // Any file-read error aborts the scan.
 func ExtractTags(root string) ([]string, error) {
@@ -62,7 +62,7 @@ func ExtractTags(root string) ([]string, error) {
 				}
 				fm, body, parseErr := ParseNote(data)
 				if parseErr != nil {
-					log.Printf("warn: %s: %v", path, parseErr)
+					fmt.Fprintf(os.Stderr, "warn: %s: %v\n", path, parseErr)
 				}
 				for _, t := range fm.Tags {
 					if t != "" {

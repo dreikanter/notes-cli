@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.74] - 2026-04-20
+
+### Changed
+
+- Small code-review follow-ups: `--path` help now documents the `$NOTES_PATH` / `~/notes` default; `notes resolve` Long help clarifies that `--today` is the only filter flag that can combine with a positional argument; `grep`/`rg` subcommands accept `-h` (not just `--help`) for help; frontmatter-parse warnings go to stderr directly instead of through `log.Printf` (no more timestamp prefix); `writeAtomic` is now shared across `update`, `annotate`, `append`, and the prev-todo rewrite in `new-todo` so partial writes never leave a corrupted file behind ([#116])
+
 ## [0.1.73] - 2026-04-19
 
 ### Changed
@@ -459,3 +465,4 @@
 [#110]: https://github.com/dreikanter/notes-cli/issues/110
 [#112]: https://github.com/dreikanter/notes-cli/issues/112
 [#114]: https://github.com/dreikanter/notes-cli/pull/114
+[#116]: https://github.com/dreikanter/notes-cli/pull/116

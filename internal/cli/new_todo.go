@@ -48,7 +48,7 @@ var newTodoCmd = &cobra.Command{
 			result := note.RolloverTasks(prevLines)
 			carriedTasks = result.CarriedTasks
 
-			if err := os.WriteFile(prevPath, []byte(strings.Join(result.UpdatedLines, "\n")), 0o644); err != nil {
+			if err := writeAtomic(prevPath, []byte(strings.Join(result.UpdatedLines, "\n"))); err != nil {
 				return fmt.Errorf("cannot update previous todo: %w", err)
 			}
 		}

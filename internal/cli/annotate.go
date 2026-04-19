@@ -102,13 +102,8 @@ func annotateRunE(cmd *cobra.Command, args []string) error {
 	merged := mergeAnnotation(existing, gen)
 	newContent := note.FormatNote(merged, body)
 
-	tmpPath := fullPath + ".tmp"
-	if err := os.WriteFile(tmpPath, newContent, 0o644); err != nil {
-		return fmt.Errorf("cannot write note: %w", err)
-	}
-	if err := os.Rename(tmpPath, fullPath); err != nil {
-		os.Remove(tmpPath)
-		return fmt.Errorf("cannot rename note: %w", err)
+	if err := writeAtomic(fullPath, newContent); err != nil {
+		return err
 	}
 
 	fmt.Fprintln(cmd.OutOrStdout(), fullPath)
