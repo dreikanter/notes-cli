@@ -27,7 +27,7 @@ type Note struct {
 	Date     string // date as Y...YMMDD, e.g. "20260106"
 	ID       string // "8823"
 	Slug     string // descriptive slug, e.g. "api-redesign", or ""
-	Type     string // known type from file extension, e.g. "todo", "backlog", or ""
+	Type     string // type reported by the filename dot-suffix; any string accepted. Frontmatter type is canonical when available.
 	BaseName string // filename without extensions, e.g. "20260106_8823" or "20260102_8814_standup"
 }
 

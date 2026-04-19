@@ -67,7 +67,7 @@ func Scan(root string) ([]Note, error) {
 
 // ResolveRef resolves a note reference to a Note using the following priority:
 //  1. Numeric ID — exact match; all-digit queries never fall through
-//  2. Type — most recent note of a known type (todo, backlog, weekly)
+//  2. Type with special behavior (todo, backlog, weekly) — most recent match
 //  3. Path — absolute or relative path with separator, exact match under root
 //  4. Slug substring — most recent note whose slug contains the query
 func ResolveRef(root, query string) (*Note, error) {
