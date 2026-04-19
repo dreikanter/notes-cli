@@ -199,9 +199,17 @@ func parseAnnotation(raw []byte) (annotateResult, error) {
 	}
 	var res annotateResult
 	if err := json.Unmarshal([]byte(env.Result), &res); err != nil {
-		return annotateResult{}, fmt.Errorf("cannot parse claude response payload: %w", err)
+		return annotateResult{}, fmt.Errorf("cannot parse claude response payload: %w\npayload: %s", err, snippet(env.Result, 300))
 	}
 	return res, nil
+}
+
+// snippet returns up to n bytes of s, with "..." appended when truncated.
+func snippet(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "..."
 }
 
 // mergeAnnotation fills empty fields in existing from gen.
