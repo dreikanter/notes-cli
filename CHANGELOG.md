@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.72] - 2026-04-19
+
+### Changed
+
+- Replace `ParseFrontmatterFields` / `BuildFrontmatter` trio with error-returning `ParseNote` / `FormatNote` pair; rename `FrontmatterFields` → `Frontmatter` with `IsZero`. Single-note writers (`update`, `annotate`) now surface frontmatter parse errors; bulk readers (`FilterByTags`, `ExtractTags`) log per-note warnings and continue. Body is returned as a sub-slice of the input (no copy), and CRLF interior bytes round-trip through parsing. `ExtractTags` concurrency now uses `errgroup` ([#112])
+
 ## [0.1.71] - 2026-04-19
 
 ### Changed
@@ -441,3 +447,4 @@
 [#108]: https://github.com/dreikanter/notes-cli/pull/108
 [#109]: https://github.com/dreikanter/notes-cli/pull/109
 [#110]: https://github.com/dreikanter/notes-cli/issues/110
+[#112]: https://github.com/dreikanter/notes-cli/issues/112
