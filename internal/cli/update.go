@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/dreikanter/notes-cli/note"
 	"github.com/spf13/cobra"
@@ -13,7 +12,7 @@ import (
 
 var updateCmd = &cobra.Command{
 	Use:   "update <id|type|query>",
-	Short: "Update frontmatter and/or rename a note",
+	Short: "Update frontmatter; use --sync-filename to reconcile the filename",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		updateTags, _ := cmd.Flags().GetStringSlice("tag")
@@ -25,12 +24,12 @@ var updateCmd = &cobra.Command{
 		updateType, _ := cmd.Flags().GetString("type")
 		updateNoType, _ := cmd.Flags().GetBool("no-type")
 		updatePrivate, _ := cmd.Flags().GetBool("private")
+		syncFilename, _ := cmd.Flags().GetBool("sync-filename")
 
-		// At least one update flag must be provided.
 		updateFlags := []string{
 			"tag", "no-tags", "title", "description",
 			"slug", "no-slug", "type", "no-type",
-			"public", "private",
+			"public", "private", "sync-filename",
 		}
 		hasFlag := false
 		for _, name := range updateFlags {
@@ -41,10 +40,6 @@ var updateCmd = &cobra.Command{
 		}
 		if !hasFlag {
 			return fmt.Errorf("at least one update flag is required")
-		}
-
-		if updateType != "" && !note.HasSpecialBehavior(updateType) {
-			return fmt.Errorf("unknown note type %q (valid types: %s)", updateType, strings.Join(note.TypesWithSpecialBehavior, ", "))
 		}
 
 		if cmd.Flags().Changed("slug") {
@@ -65,10 +60,20 @@ var updateCmd = &cobra.Command{
 			return fmt.Errorf("cannot read note: %w", err)
 		}
 
-		updated, body, err := note.ParseNote(data)
+		existing, body, err := note.ParseNote(data)
 		if err != nil {
 			return fmt.Errorf("%s: %w", oldPath, err)
 		}
+
+		// frontmatter is canonical; filename values are fallbacks only.
+		if existing.Slug == "" {
+			existing.Slug = n.Slug
+		}
+		if existing.Type == "" {
+			existing.Type = n.Type
+		}
+
+		updated := existing // includes preserved Extra
 
 		if cmd.Flags().Changed("title") {
 			updated.Title = updateTitle
@@ -82,50 +87,48 @@ var updateCmd = &cobra.Command{
 			updated.Tags = updateTags
 		}
 
-		// Determine new slug.
-		newSlug := n.Slug
 		if updateNoSlug {
-			newSlug = ""
+			updated.Slug = ""
 		} else if cmd.Flags().Changed("slug") {
-			newSlug = updateSlug
-		}
-		if updateNoSlug || cmd.Flags().Changed("slug") {
-			updated.Slug = newSlug
+			updated.Slug = updateSlug
 		}
 		if updatePrivate {
 			updated.Public = false
 		} else if cmd.Flags().Changed("public") {
 			updated.Public = true
 		}
-
-		// Determine new type.
-		newType := n.Type
 		if updateNoType {
-			newType = ""
+			updated.Type = ""
 		} else if cmd.Flags().Changed("type") {
-			newType = updateType
+			updated.Type = updateType
 		}
 
-		// n.ID is guaranteed to be a non-empty digit string by ParseFilename.
-		id, _ := strconv.Atoi(n.ID)
+		// Any non-sync flag => rewrite the frontmatter in place (no rename).
+		contentChanged := cmd.Flags().Changed("title") ||
+			cmd.Flags().Changed("description") ||
+			cmd.Flags().Changed("tag") || updateNoTags ||
+			cmd.Flags().Changed("slug") || updateNoSlug ||
+			cmd.Flags().Changed("type") || updateNoType ||
+			cmd.Flags().Changed("public") || updatePrivate
 
-		newFilename := note.NoteFilename(n.Date, id, newSlug, newType)
-		dir := filepath.Dir(oldPath)
-		newPath := filepath.Join(dir, newFilename)
-
-		newContent := note.FormatNote(updated, body)
-
-		tmpPath := newPath + ".tmp"
-		if err := os.WriteFile(tmpPath, newContent, 0o644); err != nil {
-			return fmt.Errorf("cannot write note: %w", err)
+		if contentChanged {
+			newContent := note.FormatNote(updated, body)
+			if err := writeAtomic(oldPath, newContent); err != nil {
+				return err
+			}
 		}
-		if err := os.Rename(tmpPath, newPath); err != nil {
-			os.Remove(tmpPath)
-			return fmt.Errorf("cannot rename note: %w", err)
-		}
-		if newPath != oldPath {
-			if err := os.Remove(oldPath); err != nil {
-				return fmt.Errorf("cannot remove old note: %w", err)
+
+		// --sync-filename: reconcile filename to match (already-updated) frontmatter.
+		newPath := oldPath
+		if syncFilename {
+			id, _ := strconv.Atoi(n.ID)
+			newFilename := note.NoteFilename(n.Date, id, updated.Slug, updated.Type)
+			dir := filepath.Dir(oldPath)
+			newPath = filepath.Join(dir, newFilename)
+			if newPath != oldPath {
+				if err := os.Rename(oldPath, newPath); err != nil {
+					return fmt.Errorf("cannot rename note: %w", err)
+				}
 			}
 		}
 
@@ -134,17 +137,32 @@ var updateCmd = &cobra.Command{
 	},
 }
 
+// writeAtomic writes data to path via a tmp+rename so partial writes don't
+// leave a corrupted file behind.
+func writeAtomic(path string, data []byte) error {
+	tmpPath := path + ".tmp"
+	if err := os.WriteFile(tmpPath, data, 0o644); err != nil {
+		return fmt.Errorf("cannot write note: %w", err)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("cannot replace note: %w", err)
+	}
+	return nil
+}
+
 func init() {
 	updateCmd.Flags().StringSlice("tag", nil, "tag for frontmatter (repeatable); replaces existing tags")
 	updateCmd.Flags().Bool("no-tags", false, "remove all tags from frontmatter")
 	updateCmd.Flags().String("title", "", "title for frontmatter (empty string clears it)")
 	updateCmd.Flags().String("description", "", "description for frontmatter (empty string clears it)")
-	updateCmd.Flags().String("slug", "", "update slug and rename file")
-	updateCmd.Flags().Bool("no-slug", false, "remove slug from filename")
-	updateCmd.Flags().String("type", "", "update note type and rename file (todo, backlog, weekly)")
-	updateCmd.Flags().Bool("no-type", false, "remove type suffix from filename")
+	updateCmd.Flags().String("slug", "", "update slug in frontmatter; does not rename the file")
+	updateCmd.Flags().Bool("no-slug", false, "remove slug from frontmatter")
+	updateCmd.Flags().String("type", "", "update type in frontmatter; does not rename the file")
+	updateCmd.Flags().Bool("no-type", false, "remove type from frontmatter")
 	updateCmd.Flags().Bool("public", false, "mark note as public in frontmatter")
 	updateCmd.Flags().Bool("private", false, "mark note as private in frontmatter")
+	updateCmd.Flags().Bool("sync-filename", false, "rename the file to match the frontmatter's slug/type cache")
 	updateCmd.MarkFlagsMutuallyExclusive("slug", "no-slug")
 	updateCmd.MarkFlagsMutuallyExclusive("type", "no-type")
 	updateCmd.MarkFlagsMutuallyExclusive("tag", "no-tags")
