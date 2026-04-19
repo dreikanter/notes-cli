@@ -15,6 +15,7 @@ const frontmatterDelim = "---"
 type Frontmatter struct {
 	Title       string               `yaml:"title,omitempty"`
 	Slug        string               `yaml:"slug,omitempty"`
+	Type        string               `yaml:"type,omitempty"`
 	Tags        []string             `yaml:"tags,omitempty"`
 	Description string               `yaml:"description,omitempty"`
 	Public      bool                 `yaml:"public,omitempty"`
@@ -23,7 +24,7 @@ type Frontmatter struct {
 
 // IsZero reports whether f has no fields set, including Extra.
 func (f Frontmatter) IsZero() bool {
-	return f.Title == "" && f.Slug == "" && len(f.Tags) == 0 &&
+	return f.Title == "" && f.Slug == "" && f.Type == "" && len(f.Tags) == 0 &&
 		f.Description == "" && !f.Public && len(f.Extra) == 0
 }
 
@@ -49,6 +50,10 @@ func (f *Frontmatter) UnmarshalYAML(node *yaml.Node) error {
 		case "slug":
 			if err := value.Decode(&f.Slug); err != nil {
 				return fmt.Errorf("frontmatter slug: %w", err)
+			}
+		case "type":
+			if err := value.Decode(&f.Type); err != nil {
+				return fmt.Errorf("frontmatter type: %w", err)
 			}
 		case "tags":
 			if err := value.Decode(&f.Tags); err != nil {
@@ -78,45 +83,51 @@ func (f *Frontmatter) UnmarshalYAML(node *yaml.Node) error {
 func (f Frontmatter) MarshalYAML() (interface{}, error) {
 	node := &yaml.Node{Kind: yaml.MappingNode}
 
+	// Encode cannot fail for string/[]string/bool — matches the panic-on-
+	// impossible stance FormatNote takes for yaml.Marshal.
 	appendString := func(key, value string) {
 		if value == "" {
 			return
 		}
 		valNode := &yaml.Node{}
-		if err := valNode.Encode(value); err == nil {
-			node.Content = append(node.Content,
-				&yaml.Node{Kind: yaml.ScalarNode, Value: key},
-				valNode,
-			)
+		if err := valNode.Encode(value); err != nil {
+			panic(fmt.Sprintf("yaml encode string %q: %v", key, err))
 		}
+		node.Content = append(node.Content,
+			&yaml.Node{Kind: yaml.ScalarNode, Value: key},
+			valNode,
+		)
 	}
 	appendList := func(key string, value []string) {
 		if len(value) == 0 {
 			return
 		}
 		valNode := &yaml.Node{}
-		if err := valNode.Encode(value); err == nil {
-			node.Content = append(node.Content,
-				&yaml.Node{Kind: yaml.ScalarNode, Value: key},
-				valNode,
-			)
+		if err := valNode.Encode(value); err != nil {
+			panic(fmt.Sprintf("yaml encode list %q: %v", key, err))
 		}
+		node.Content = append(node.Content,
+			&yaml.Node{Kind: yaml.ScalarNode, Value: key},
+			valNode,
+		)
 	}
 	appendBool := func(key string, value bool) {
 		if !value {
 			return
 		}
 		valNode := &yaml.Node{}
-		if err := valNode.Encode(value); err == nil {
-			node.Content = append(node.Content,
-				&yaml.Node{Kind: yaml.ScalarNode, Value: key},
-				valNode,
-			)
+		if err := valNode.Encode(value); err != nil {
+			panic(fmt.Sprintf("yaml encode bool %q: %v", key, err))
 		}
+		node.Content = append(node.Content,
+			&yaml.Node{Kind: yaml.ScalarNode, Value: key},
+			valNode,
+		)
 	}
 
 	appendString("title", f.Title)
 	appendString("slug", f.Slug)
+	appendString("type", f.Type)
 	appendList("tags", f.Tags)
 	appendString("description", f.Description)
 	appendBool("public", f.Public)

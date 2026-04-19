@@ -314,3 +314,31 @@ func TestIsZeroIncludesExtra(t *testing.T) {
 		t.Error("Frontmatter with Extra should not be zero")
 	}
 }
+
+func TestTypeRoundTrips(t *testing.T) {
+	in := []byte("---\ntitle: T\ntype: meeting\n---\n\nbody\n")
+	fm, body, err := ParseNote(in)
+	if err != nil {
+		t.Fatalf("ParseNote: %v", err)
+	}
+	if fm.Type != "meeting" {
+		t.Errorf("Type = %q, want meeting", fm.Type)
+	}
+	out := string(FormatNote(fm, body))
+	want := "---\ntitle: T\ntype: meeting\n---\n\nbody\n"
+	if out != want {
+		t.Errorf("out = %q, want %q", out, want)
+	}
+}
+
+func TestTypeFieldOrder(t *testing.T) {
+	fm := Frontmatter{
+		Title: "T", Slug: "s", Type: "meeting",
+		Tags: []string{"a"}, Description: "D", Public: true,
+	}
+	got := string(FormatNote(fm, []byte("body\n")))
+	want := "---\ntitle: T\nslug: s\ntype: meeting\ntags:\n    - a\ndescription: D\npublic: true\n---\n\nbody\n"
+	if got != want {
+		t.Errorf("FormatNote =\n%q\nwant:\n%q", got, want)
+	}
+}
