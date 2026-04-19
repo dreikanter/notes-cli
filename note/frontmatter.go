@@ -2,6 +2,7 @@ package note
 
 import (
 	"bytes"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -61,23 +62,57 @@ func BuildFrontmatter(f FrontmatterFields) string {
 	if err := enc.Encode(root); err != nil {
 		return ""
 	}
-	_ = enc.Close()
+	if err := enc.Close(); err != nil {
+		return ""
+	}
 
-	return "---\n" + buf.String() + "---\n\n"
+	// Normalize trailing whitespace so the wrapped output is stable even if
+	// yaml.v3 ever changes its trailing-newline emission.
+	body := strings.TrimRight(buf.String(), "\n") + "\n"
+	return "---\n" + body + "---\n\n"
 }
 
 // ParseFrontmatterFields extracts all frontmatter fields from data.
 // Returns zero-value FrontmatterFields if no valid frontmatter block is
-// present or if the YAML inside the block fails to parse.
+// present or if the YAML inside the block is not a mapping.
+//
+// Per-field errors are tolerated: a single field whose value cannot be
+// decoded into its target type (e.g. `public: maybe`) is skipped, and the
+// remaining fields still parse. This matches the old line-based parser's
+// graceful degradation on partially malformed notes.
 func ParseFrontmatterFields(data []byte) FrontmatterFields {
 	body, _, ok := findFrontmatterBlock(data)
 	if !ok {
 		return FrontmatterFields{}
 	}
 
-	var f FrontmatterFields
-	if err := yaml.Unmarshal(body, &f); err != nil {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(body, &doc); err != nil {
 		return FrontmatterFields{}
+	}
+	if doc.Kind != yaml.DocumentNode || len(doc.Content) == 0 {
+		return FrontmatterFields{}
+	}
+	mapping := doc.Content[0]
+	if mapping.Kind != yaml.MappingNode {
+		return FrontmatterFields{}
+	}
+
+	var f FrontmatterFields
+	for i := 0; i+1 < len(mapping.Content); i += 2 {
+		key, value := mapping.Content[i], mapping.Content[i+1]
+		switch key.Value {
+		case "title":
+			_ = value.Decode(&f.Title)
+		case "slug":
+			_ = value.Decode(&f.Slug)
+		case "tags":
+			_ = value.Decode(&f.Tags)
+		case "description":
+			_ = value.Decode(&f.Description)
+		case "public":
+			_ = value.Decode(&f.Public)
+		}
 	}
 	return f
 }

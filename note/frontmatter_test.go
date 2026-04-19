@@ -75,6 +75,16 @@ func TestParseFrontmatterFields(t *testing.T) {
 			want:  FrontmatterFields{},
 		},
 		{
+			name:  "bad field does not drop siblings",
+			input: "---\ntitle: T\npublic: maybe\ntags: [a, b]\n---\n\n# Content\n",
+			want:  FrontmatterFields{Title: "T", Tags: []string{"a", "b"}},
+		},
+		{
+			name:  "unclosed flow sequence drops frontmatter",
+			input: "---\ntitle: T\ntags: [a, b\n---\n\n# Content\n",
+			want:  FrontmatterFields{},
+		},
+		{
 			name:  "all fields including slug and public",
 			input: "---\ntitle: T\nslug: s\ntags: [a]\ndescription: D\npublic: true\n---\n\n# Content\n",
 			want: FrontmatterFields{
