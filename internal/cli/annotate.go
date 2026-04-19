@@ -6,14 +6,16 @@ package cli
 //	  "type": "result",
 //	  "subtype": "success",
 //	  "is_error": false,
-//	  "result": "<schema-conforming JSON as a string>",
+//	  "result": "<narrative text>",
+//	  "structured_output": {<schema-conforming object>},
 //	  "session_id": "...",
 //	  "duration_ms": 0,
 //	  "total_cost_usd": 0
 //	}
 //
-// parseAnnotation reads the outer envelope, then unmarshals result as a
-// nested JSON string into annotateResult.
+// parseAnnotation reads the outer envelope and pulls the schema-validated
+// payload from structured_output. The result field holds Claude's narrative
+// response and is used only to surface error messages when is_error is true.
 
 import (
 	"bytes"
@@ -177,11 +179,12 @@ func buildAnnotateSchema(fields []string) string {
 // annotateEnvelope mirrors the outer JSON written by `claude -p --output-format json`.
 // Only the fields we rely on are declared.
 type annotateEnvelope struct {
-	IsError bool   `json:"is_error"`
-	Result  string `json:"result"`
+	IsError          bool            `json:"is_error"`
+	Result           string          `json:"result"`
+	StructuredOutput *annotateResult `json:"structured_output"`
 }
 
-// annotateResult is the schema-validated payload carried by annotateEnvelope.Result.
+// annotateResult is the schema-validated payload carried by annotateEnvelope.StructuredOutput.
 type annotateResult struct {
 	Title       string   `json:"title,omitempty"`
 	Description string   `json:"description,omitempty"`
@@ -192,16 +195,15 @@ type annotateResult struct {
 func parseAnnotation(raw []byte) (annotateResult, error) {
 	var env annotateEnvelope
 	if err := json.Unmarshal(raw, &env); err != nil {
-		return annotateResult{}, fmt.Errorf("cannot parse claude response: %w\nraw: %s", err, snippet(string(raw), 600))
+		return annotateResult{}, fmt.Errorf("cannot parse claude response: %w", err)
 	}
 	if env.IsError {
 		return annotateResult{}, fmt.Errorf("claude returned error: %s", env.Result)
 	}
-	var res annotateResult
-	if err := json.Unmarshal([]byte(env.Result), &res); err != nil {
-		return annotateResult{}, fmt.Errorf("cannot parse claude response payload: %w\nresult: %s\nraw envelope: %s", err, snippet(env.Result, 300), snippet(string(raw), 1200))
+	if env.StructuredOutput == nil {
+		return annotateResult{}, fmt.Errorf("claude response missing structured_output; got result: %s", snippet(env.Result, 200))
 	}
-	return res, nil
+	return *env.StructuredOutput, nil
 }
 
 // snippet returns up to n bytes of s, with "..." appended when truncated.

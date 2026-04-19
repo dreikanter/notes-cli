@@ -130,7 +130,8 @@ const annotateSampleEnvelope = `{
   "type": "result",
   "subtype": "success",
   "is_error": false,
-  "result": "{\"title\":\"Weekly sync\",\"description\":\"Notes from the weekly team sync.\",\"tags\":[\"meeting\",\"weekly\"]}"
+  "result": "Metadata generated.",
+  "structured_output": {"title": "Weekly sync", "description": "Notes from the weekly team sync.", "tags": ["meeting", "weekly"]}
 }`
 
 func TestParseAnnotationHappyPath(t *testing.T) {
@@ -156,11 +157,14 @@ func TestParseAnnotationInvalidEnvelope(t *testing.T) {
 	}
 }
 
-func TestParseAnnotationInvalidInnerJSON(t *testing.T) {
-	bad := `{"type":"result","subtype":"success","is_error":false,"result":"not json"}`
+func TestParseAnnotationMissingStructuredOutput(t *testing.T) {
+	bad := `{"type":"result","subtype":"success","is_error":false,"result":"Metadata generated."}`
 	_, err := parseAnnotation([]byte(bad))
 	if err == nil {
-		t.Fatal("expected error for invalid inner JSON")
+		t.Fatal("expected error when structured_output is absent")
+	}
+	if !strings.Contains(err.Error(), "structured_output") {
+		t.Errorf("error should name structured_output: %v", err)
 	}
 }
 
@@ -459,7 +463,7 @@ func TestAnnotateSchemaOnlyContainsEmptyFields(t *testing.T) {
 	root, ref := noteWithFrontmatter(t, fm, "body for schema test")
 	argsPath := filepath.Join(t.TempDir(), "args.txt")
 	// Envelope only needs to supply the two empty fields.
-	env := `{"type":"result","subtype":"success","is_error":false,"result":"{\"description\":\"d\",\"tags\":[\"t\"]}"}`
+	env := `{"type":"result","subtype":"success","is_error":false,"result":"ok","structured_output":{"description":"d","tags":["t"]}}`
 	withClaudeBinary(t, writeFakeClaudeRecording(t, env, argsPath))
 
 	if _, err := runAnnotate(t, root, ref); err != nil {
