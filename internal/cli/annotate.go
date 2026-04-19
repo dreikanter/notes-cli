@@ -192,14 +192,14 @@ type annotateResult struct {
 func parseAnnotation(raw []byte) (annotateResult, error) {
 	var env annotateEnvelope
 	if err := json.Unmarshal(raw, &env); err != nil {
-		return annotateResult{}, fmt.Errorf("cannot parse claude response: %w", err)
+		return annotateResult{}, fmt.Errorf("cannot parse claude response: %w\nraw: %s", err, snippet(string(raw), 600))
 	}
 	if env.IsError {
 		return annotateResult{}, fmt.Errorf("claude returned error: %s", env.Result)
 	}
 	var res annotateResult
 	if err := json.Unmarshal([]byte(env.Result), &res); err != nil {
-		return annotateResult{}, fmt.Errorf("cannot parse claude response payload: %w\npayload: %s", err, snippet(env.Result, 300))
+		return annotateResult{}, fmt.Errorf("cannot parse claude response payload: %w\nresult: %s\nraw envelope: %s", err, snippet(env.Result, 300), snippet(string(raw), 1200))
 	}
 	return res, nil
 }
