@@ -329,6 +329,8 @@
 - Add `new` and `new-todo` commands ([#2])
 - Add `--no-frontmatter` flag to `read` command ([#3], [#4])
 
+[0.1.70]: https://github.com/dreikanter/notes-cli/releases/tag/v0.1.70
+[0.1.69]: https://github.com/dreikanter/notes-cli/releases/tag/v0.1.69
 [0.1.66]: https://github.com/dreikanter/notes-cli/releases/tag/v0.1.66
 [0.1.63]: https://github.com/dreikanter/notes-cli/releases/tag/v0.1.63
 [0.1.60]: https://github.com/dreikanter/notes-cli/releases/tag/v0.1.60
