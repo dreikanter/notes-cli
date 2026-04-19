@@ -33,18 +33,18 @@ type Note struct {
 
 // ParseFilename parses a note base filename (without .md extension) into its components.
 // Expected format: Y...YMMDD_ID[_slug][.TYPE], where MM and DD are zero-padded.
-// If the base name ends with a known type suffix (e.g. ".todo"), it is extracted as the Type.
+// Any dot-suffix on the base name is extracted as the filename-reported Type; no
+// registry gate is applied here. Frontmatter `type` is canonical when available.
 func ParseFilename(baseName string) (Note, error) {
 	noteType := ""
 	remaining := baseName
 
-	// Check for known type as a dot-suffix, e.g. "20260102_8814.todo"
+	// Any single dot-suffix on the base name is treated as a filename-reported
+	// type (a fast-path hint used by scan-based filters). No registry gate here:
+	// any string is accepted. Frontmatter `type` is canonical when available.
 	if idx := strings.LastIndex(baseName, "."); idx >= 0 {
-		suffix := baseName[idx+1:]
-		if HasSpecialBehavior(suffix) {
-			noteType = suffix
-			remaining = baseName[:idx]
-		}
+		noteType = baseName[idx+1:]
+		remaining = baseName[:idx]
 	}
 
 	parts := strings.SplitN(remaining, "_", 3)
