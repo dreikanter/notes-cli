@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.75] - 2026-04-20
+
+### Changed
+
+- Remove `signal.Reset(syscall.SIGPIPE)` from `main`: empirically verified a no-op on Go 1.25 (SIGPIPE behavior is identical with or without the call on both stdout and non-stdout fds), so the line and its `os/signal`/`syscall` imports are dead code. Go's default handler (terminate on fd 1/2, return EPIPE elsewhere) already provides the commented-for behavior ([#118])
+
 ## [0.1.74] - 2026-04-20
 
 ### Changed
@@ -466,3 +472,4 @@
 [#112]: https://github.com/dreikanter/notes-cli/issues/112
 [#114]: https://github.com/dreikanter/notes-cli/pull/114
 [#116]: https://github.com/dreikanter/notes-cli/pull/116
+[#118]: https://github.com/dreikanter/notes-cli/pull/118
