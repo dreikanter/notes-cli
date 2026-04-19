@@ -79,8 +79,8 @@ var appendCmd = &cobra.Command{
 		}
 		result := existingStr + "\n" + content + "\n"
 
-		if err := os.WriteFile(targetPath, []byte(result), 0o644); err != nil {
-			return fmt.Errorf("cannot write note: %w", err)
+		if err := writeAtomic(targetPath, []byte(result)); err != nil {
+			return err
 		}
 
 		fmt.Fprintln(cmd.OutOrStdout(), targetPath)

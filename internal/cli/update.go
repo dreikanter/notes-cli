@@ -146,20 +146,6 @@ var updateCmd = &cobra.Command{
 	},
 }
 
-// writeAtomic writes data to path via a tmp+rename so partial writes don't
-// leave a corrupted file behind.
-func writeAtomic(path string, data []byte) error {
-	tmpPath := path + ".tmp"
-	if err := os.WriteFile(tmpPath, data, 0o644); err != nil {
-		return fmt.Errorf("cannot write note: %w", err)
-	}
-	if err := os.Rename(tmpPath, path); err != nil {
-		os.Remove(tmpPath)
-		return fmt.Errorf("cannot replace note: %w", err)
-	}
-	return nil
-}
-
 func init() {
 	updateCmd.Flags().StringSlice("tag", nil, "tag for frontmatter (repeatable); replaces existing tags")
 	updateCmd.Flags().Bool("no-tags", false, "remove all tags from frontmatter")

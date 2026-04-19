@@ -21,6 +21,20 @@ type createNoteParams struct {
 	Body        string // initial content after frontmatter
 }
 
+// writeAtomic writes data to path via a tmp+rename so partial writes don't
+// leave a corrupted file behind.
+func writeAtomic(path string, data []byte) error {
+	tmpPath := path + ".tmp"
+	if err := os.WriteFile(tmpPath, data, 0o644); err != nil {
+		return fmt.Errorf("cannot write note: %w", err)
+	}
+	if err := os.Rename(tmpPath, path); err != nil {
+		os.Remove(tmpPath)
+		return fmt.Errorf("cannot replace note: %w", err)
+	}
+	return nil
+}
+
 // createNote creates a new note file with optional frontmatter and body content.
 // Returns the absolute path to the created file.
 func createNote(p createNoteParams) (string, error) {
