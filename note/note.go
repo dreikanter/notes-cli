@@ -31,20 +31,32 @@ type Note struct {
 	BaseName string // filename without extensions, e.g. "20260106_8823" or "20260102_8814_standup"
 }
 
+// isFilenameCacheSafeType reports whether a note type can round-trip through
+// the filename-suffix cache. Values containing '.', '/', or '\' cannot —
+// ParseFilename would mis-split them — so we omit them from the filename
+// entirely and rely on frontmatter as canonical.
+func isFilenameCacheSafeType(noteType string) bool {
+	return noteType != "" && !strings.ContainsAny(noteType, `./\`)
+}
+
 // ParseFilename parses a note base filename (without .md extension) into its components.
 // Expected format: Y...YMMDD_ID[_slug][.TYPE], where MM and DD are zero-padded.
-// Any dot-suffix on the base name is extracted as the filename-reported Type; no
-// registry gate is applied here. Frontmatter `type` is canonical when available.
+// The dot-suffix is extracted as the filename-reported Type only when it round-
+// trips cleanly (see isFilenameCacheSafeType). Frontmatter `type` is canonical.
 func ParseFilename(baseName string) (Note, error) {
 	noteType := ""
 	remaining := baseName
 
-	// Any single dot-suffix on the base name is treated as a filename-reported
-	// type (a fast-path hint used by scan-based filters). No registry gate here:
-	// any string is accepted. Frontmatter `type` is canonical when available.
+	// Only treat the dot-suffix as a type if the remaining base is itself
+	// dot-free — i.e. the suffix round-trips through NoteFilename. Otherwise
+	// leave Type empty and let the caller rely on frontmatter.
 	if idx := strings.LastIndex(baseName, "."); idx >= 0 {
-		noteType = baseName[idx+1:]
-		remaining = baseName[:idx]
+		suffix := baseName[idx+1:]
+		prefix := baseName[:idx]
+		if isFilenameCacheSafeType(suffix) && !strings.Contains(prefix, ".") {
+			noteType = suffix
+			remaining = prefix
+		}
 	}
 
 	parts := strings.SplitN(remaining, "_", 3)
@@ -77,13 +89,15 @@ func ParseFilename(baseName string) (Note, error) {
 }
 
 // NoteFilename generates a note filename from date, id, optional slug, and optional type.
-// Type is encoded as a secondary file extension (e.g. ".todo.md").
+// Type is encoded as a secondary file extension (e.g. ".todo.md") only when it's
+// safe to round-trip through ParseFilename; values with '.' or path separators
+// are omitted from the filename, with frontmatter remaining canonical.
 func NoteFilename(date string, id int, slug, noteType string) string {
 	base := fmt.Sprintf("%s_%d", date, id)
 	if slug != "" {
 		base = fmt.Sprintf("%s_%s", base, slug)
 	}
-	if noteType != "" {
+	if isFilenameCacheSafeType(noteType) {
 		return base + "." + noteType + ".md"
 	}
 	return base + ".md"
