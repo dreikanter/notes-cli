@@ -161,7 +161,7 @@ func extractHashtags(body []byte) []string {
 			if c != '#' || inInline {
 				continue
 			}
-			if j > 0 && !isHashtagBoundaryByte(line[j-1]) {
+			if j > 0 && !isHashtagLeadingByte(line[j-1]) {
 				continue
 			}
 			k := j + 1
@@ -187,10 +187,10 @@ func isWordByte(c byte) bool {
 		(c >= '0' && c <= '9') || c == '_'
 }
 
-// isHashtagBoundaryByte reports whether c may legally precede a '#' that
+// isHashtagLeadingByte reports whether c may legally precede a '#' that
 // starts a hashtag. Word bytes (so `foo#bar` is not a tag) and URL-path
 // bytes (so `example.com/#anchor` is not a tag) are excluded.
-func isHashtagBoundaryByte(c byte) bool {
+func isHashtagLeadingByte(c byte) bool {
 	if isWordByte(c) {
 		return false
 	}
