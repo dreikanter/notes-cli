@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.82] - 2026-04-20
+
+### Changed
+
+- `notes read`, `notes append`, and `notes resolve` now include the effective filters in the "no notes found" error (e.g. `no notes found matching filters: type=[todo] today=true`) so you can tell which filter narrowed too far ([#115])
+- `notes new` and `notes new-todo` now inherit the notes-store root's directory permissions when creating date subdirectories, instead of hardcoding `0o755`, so a `0o700` root is no longer silently widened ([#115])
+
+### Removed
+
+- `notes read --no-frontmatter` no longer has a `-F` short form. Use the long flag ([#115])
+
 ## [0.1.81] - 2026-04-20
 
 ### Changed
