@@ -173,6 +173,8 @@ func TestFilterByTags(t *testing.T) {
 		{"two tags AND meeting", []string{"work", "meeting"}, 1, []string{"8818"}},
 		{"no match", []string{"nonexistent"}, 0, nil},
 		{"one matching one not", []string{"work", "nonexistent"}, 0, nil},
+		{"uppercase query matches lowercase fm", []string{"WORK"}, 3, []string{"8823", "8818", "8814"}},
+		{"mixed-case query matches", []string{"Meeting"}, 1, []string{"8818"}},
 	}
 
 	for _, tt := range tests {

@@ -168,7 +168,9 @@ func Filter(notes []Note, fragment string) []Note {
 	return results
 }
 
-// FilterByTags returns notes that contain all of the given tags in their frontmatter.
+// FilterByTags returns notes that contain all of the given tags in their
+// frontmatter. Comparison is case-insensitive: both required tags and note
+// frontmatter tags are lowercased before matching.
 // Per-note frontmatter parse errors are written to stderr and the note is skipped.
 func FilterByTags(notes []Note, root string, tags []string) ([]Note, error) {
 	var results []Note
@@ -193,10 +195,10 @@ func FilterByTags(notes []Note, root string, tags []string) ([]Note, error) {
 func hasAllTags(noteTags []string, required []string) bool {
 	set := make(map[string]struct{}, len(noteTags))
 	for _, t := range noteTags {
-		set[t] = struct{}{}
+		set[strings.ToLower(t)] = struct{}{}
 	}
 	for _, r := range required {
-		if _, ok := set[r]; !ok {
+		if _, ok := set[strings.ToLower(r)]; !ok {
 			return false
 		}
 	}

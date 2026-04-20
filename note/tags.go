@@ -8,14 +8,15 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 
 	"golang.org/x/sync/errgroup"
 )
 
 // ExtractTags scans the note store under root and returns a sorted,
-// deduplicated list of tags. Sources: frontmatter `tags:` fields and body
-// hashtags (#word) in the prose. File reads run concurrently across
+// deduplicated, lowercased list of tags. Sources: frontmatter `tags:` fields
+// and body hashtags (#word) in the prose. File reads run concurrently across
 // runtime.NumCPU() workers. Returns a nil slice for an empty store.
 // A per-note frontmatter parse error is written to stderr and the
 // note's frontmatter tags are skipped (body hashtags are still collected).
@@ -66,11 +67,11 @@ func ExtractTags(root string) ([]string, error) {
 				}
 				for _, t := range fm.Tags {
 					if t != "" {
-						local[t] = struct{}{}
+						local[strings.ToLower(t)] = struct{}{}
 					}
 				}
 				for _, t := range extractHashtags(body) {
-					local[t] = struct{}{}
+					local[strings.ToLower(t)] = struct{}{}
 				}
 			}
 			mu.Lock()

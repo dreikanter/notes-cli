@@ -211,6 +211,23 @@ func TestExtractTagsIgnoresCodeBlocks(t *testing.T) {
 	}
 }
 
+func TestExtractTagsLowercasesMixedCase(t *testing.T) {
+	root := t.TempDir()
+	writeNote(t, root, "2026/01/20260101_1001.md",
+		"---\ntags: [Work, PLANNING]\n---\n\nbody #Coffee and #coffee.\n")
+	writeNote(t, root, "2026/01/20260102_1002.md",
+		"no fm, #WORK here.\n")
+
+	got, err := ExtractTags(root)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	want := []string{"coffee", "planning", "work"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+}
+
 func TestExtractTagsNonexistentRoot(t *testing.T) {
 	_, err := ExtractTags(filepath.Join(t.TempDir(), "does-not-exist"))
 	if err == nil {

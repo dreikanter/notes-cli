@@ -65,6 +65,27 @@ func TestTagsMergedSourcesSorted(t *testing.T) {
 	}
 }
 
+func TestTagsLowercased(t *testing.T) {
+	root := t.TempDir()
+	writeTagsTestNote(t, root, "2026/01/20260101_1001.md",
+		"---\ntags: [Work, PLANNING]\n---\n\nbody with #Coffee and #WORK.\n")
+
+	out, err := runTags(t, root)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := strings.Split(out, "\n")
+	want := []string{"coffee", "planning", "work"}
+	if len(got) != len(want) {
+		t.Fatalf("got %d lines, want %d:\n%s", len(got), len(want), out)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("line %d: got %q, want %q", i, got[i], want[i])
+		}
+	}
+}
+
 func TestTagsIgnoresCodeBlocks(t *testing.T) {
 	root := t.TempDir()
 	writeTagsTestNote(t, root, "2026/01/20260101_1001.md",
