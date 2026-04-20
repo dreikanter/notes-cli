@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.77] - 2026-04-20
+
+### Changed
+
+- `notes tags` output and `--tag` filter comparisons are now case-insensitive: tags are lowercased when extracted from frontmatter and body hashtags, and both sides are lowercased when matching `--tag` values against note frontmatter. On-disk frontmatter is left unchanged ([#120])
+
 ## [0.1.76] - 2026-04-20
 
 ### Changed
@@ -480,3 +486,4 @@
 [#116]: https://github.com/dreikanter/notes-cli/pull/116
 [#118]: https://github.com/dreikanter/notes-cli/pull/118
 [#119]: https://github.com/dreikanter/notes-cli/issues/119
+[#120]: https://github.com/dreikanter/notes-cli/issues/120

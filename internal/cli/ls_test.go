@@ -49,6 +49,18 @@ func TestLsWithTag(t *testing.T) {
 	}
 }
 
+func TestLsWithTagMixedCase(t *testing.T) {
+	out, err := runLs(t, "--tag", "WORK")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	lines := strings.Split(out, "\n")
+	if len(lines) != 3 {
+		t.Fatalf("got %d lines, want 3:\n%s", len(lines), out)
+	}
+}
+
 func TestLsTagNoMatch(t *testing.T) {
 	out, err := runLs(t, "--tag", "nonexistent")
 	if err != nil {
