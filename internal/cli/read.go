@@ -44,7 +44,7 @@ var readCmd = &cobra.Command{
 			}
 
 			if len(notes) == 0 {
-				return fmt.Errorf("no notes found matching the given criteria")
+				return fmt.Errorf("no notes found matching filters: %s", f.describe())
 			}
 			relPath = notes[0].RelPath
 		} else {

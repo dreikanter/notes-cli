@@ -1,6 +1,8 @@
 package cli
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/dreikanter/notes-cli/note"
@@ -30,6 +32,25 @@ func (f filterOpts) active() bool {
 
 func (f filterOpts) hasAttributeFilters() bool {
 	return len(f.Types) > 0 || f.Slug != "" || len(f.Tags) > 0
+}
+
+// describe returns a human-readable summary of the active filters, e.g.
+// "type=[todo] today=true". Returns an empty string if no filters are set.
+func (f filterOpts) describe() string {
+	var parts []string
+	if len(f.Types) > 0 {
+		parts = append(parts, fmt.Sprintf("type=[%s]", strings.Join(f.Types, ",")))
+	}
+	if f.Slug != "" {
+		parts = append(parts, fmt.Sprintf("slug=%s", f.Slug))
+	}
+	if len(f.Tags) > 0 {
+		parts = append(parts, fmt.Sprintf("tag=[%s]", strings.Join(f.Tags, ",")))
+	}
+	if f.Today {
+		parts = append(parts, "today=true")
+	}
+	return strings.Join(parts, " ")
 }
 
 // applyFilters applies the common filter pipeline to a list of notes.
