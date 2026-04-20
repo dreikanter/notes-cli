@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.80] - 2026-04-20
+
+### Changed
+
+- `notes grep` no longer injects `-i`; searches are case-sensitive by default. Pass `-i` explicitly for case-insensitive search ([#115])
+- `notes rg` now only injects `--glob *.md`; the previously forced `--sortr path`, `--heading`, `--no-line-number`, and `--ignore-case` defaults are gone, so the subcommand behaves like plain `rg` restricted to Markdown files. Pass those flags explicitly if you want the old output style ([#115])
+- `ValidateSlug` now rejects anything outside `[A-Za-z0-9_-]` (previously only all-digit slugs were rejected), so slugs containing `/`, `\`, `.`, whitespace, or control characters can no longer reach `NoteFilename` and corrupt filesystem paths or the filename's dot-suffix cache ([#115])
+
 ## [0.1.79] - 2026-04-20
 
 ### Changed
