@@ -251,8 +251,14 @@ func TestValidateSlug(t *testing.T) {
 		{"empty slug is valid", "", false},
 		{"normal slug", "my-feature", false},
 		{"slug with digits", "feature-123", false},
+		{"slug with underscore", "snake_case", false},
 		{"all-digit slug", "999", true},
 		{"single digit", "0", true},
+		{"slug with slash", "foo/bar", true},
+		{"slug with backslash", `foo\bar`, true},
+		{"slug with dot", "foo.bar", true},
+		{"slug with space", "foo bar", true},
+		{"slug with control char", "foo\tbar", true},
 	}
 
 	for _, tt := range tests {
