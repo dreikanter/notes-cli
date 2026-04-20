@@ -16,8 +16,6 @@ var newTodoCmd = &cobra.Command{
 	Short: "Create today's todo",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		force, _ := cmd.Flags().GetBool("force")
-
 		root, err := notesRoot()
 		if err != nil {
 			return err
@@ -29,12 +27,9 @@ var newTodoCmd = &cobra.Command{
 			return err
 		}
 
-		// Check if today's todo already exists
-		if !force {
-			if existing := note.FindTodayTodo(notes, today); existing != nil {
-				fmt.Fprintln(cmd.OutOrStdout(), filepath.Join(root, existing.RelPath))
-				return nil
-			}
+		if existing := note.FindTodayTodo(notes, today); existing != nil {
+			fmt.Fprintln(cmd.OutOrStdout(), filepath.Join(root, existing.RelPath))
+			return nil
 		}
 
 		// Find the most recent previous todo and roll over tasks
@@ -82,6 +77,5 @@ var newTodoCmd = &cobra.Command{
 }
 
 func init() {
-	newTodoCmd.Flags().Bool("force", false, "regenerate today's todo even if it exists")
 	rootCmd.AddCommand(newTodoCmd)
 }
