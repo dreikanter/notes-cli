@@ -138,6 +138,10 @@ var updateCmd = &cobra.Command{
 					return fmt.Errorf("cannot link note: %w", err)
 				}
 				if err := os.Remove(oldPath); err != nil {
+					// Roll back the link so we don't leave both paths pointing
+					// to the same inode. Best-effort: a cleanup failure here
+					// isn't surfaced because the original error is more useful.
+					_ = os.Remove(newPath)
 					return fmt.Errorf("cannot remove old note: %w", err)
 				}
 			}
