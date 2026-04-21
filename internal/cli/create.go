@@ -21,6 +21,18 @@ type createNoteParams struct {
 	Body        string // initial content after frontmatter
 }
 
+// rootDirMode returns the permissions to use when creating subdirectories
+// under root. It inherits root's permissions so MkdirAll doesn't widen a
+// restrictive root (e.g. 0o700), defaulting to 0o700 if root cannot be
+// stat'd.
+func rootDirMode(root string) os.FileMode {
+	info, err := os.Stat(root)
+	if err != nil {
+		return 0o700
+	}
+	return info.Mode().Perm()
+}
+
 // writeAtomic writes data to path via a tmp+rename so partial writes don't
 // leave a corrupted file behind.
 func writeAtomic(path string, data []byte) error {
@@ -48,7 +60,7 @@ func createNote(p createNoteParams) (string, error) {
 	filename := note.NoteFilename(today, id, p.Slug, p.Type)
 	dir := note.NoteDirPath(p.Root, today)
 
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, rootDirMode(p.Root)); err != nil {
 		return "", fmt.Errorf("cannot create directory %s: %w", dir, err)
 	}
 

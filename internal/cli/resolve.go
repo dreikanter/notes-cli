@@ -65,7 +65,10 @@ positional resolution to notes dated today.`,
 		}
 
 		if len(notes) == 0 {
-			return fmt.Errorf("no notes found matching the given criteria")
+			if f.active() {
+				return fmt.Errorf("no notes found matching filters: %s", f.describe())
+			}
+			return fmt.Errorf("no notes found")
 		}
 
 		fmt.Fprintln(cmd.OutOrStdout(), filepath.Join(root, notes[0].RelPath))
