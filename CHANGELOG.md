@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.86] - 2026-04-21
+
+### Changed
+
+- `note.ResolveRef` and `note.ResolveRefDate` now return `(Note, error)` instead of `(*Note, error)`, matching the value-return convention of the other store APIs. Callers accessing fields (`n.RelPath`, `n.ID`, etc.) need no changes; nil-vs-zero ambiguity is gone ([#132])
+- `note.Scan` now logs a stderr warning and skips unreadable year/month subdirectories instead of aborting the whole scan. One permission glitch on a single month directory no longer breaks `ls`, `tags`, or `resolve`; root-level `ReadDir` failures still surface as hard errors ([#132])
+- `Frontmatter.MarshalYAML` builds `yaml.Node` values directly (`Tag: "!!str"` / `"!!bool"` / `"!!seq"`) instead of routing strings, bools, and string lists through `(*yaml.Node).Encode` with panic-on-error wrappers. Output is byte-identical; the four impossible-to-reach panic paths are gone ([#132])
+
 ## [0.1.85] - 2026-04-21
 
 ### Changed
@@ -556,3 +564,4 @@
 [#123]: https://github.com/dreikanter/notes-cli/pull/123
 [#115]: https://github.com/dreikanter/notes-cli/issues/115
 [#131]: https://github.com/dreikanter/notes-cli/pull/131
+[#132]: https://github.com/dreikanter/notes-cli/pull/132
