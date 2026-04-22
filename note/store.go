@@ -2,6 +2,7 @@ package note
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -9,11 +10,43 @@ import (
 	"strings"
 )
 
-// Scan enumerates notes under root using the known YYYY/MM/ directory structure.
-// Only directories matching year (all digits) and month (two-digit) patterns are visited.
-// Unreadable year/month subdirectories are logged to stderr and skipped, matching
-// the per-note parse-error behavior, so a single permission glitch can't break ls/tags/resolve.
-func Scan(root string) ([]Note, error) {
+// ScanOptions configures Scan's directory traversal.
+//
+// Strict=true (the default when no options are passed) restricts discovery to
+// the canonical YYYY/MM/*.md layout used by notes-cli: only top-level directories
+// whose name is all digits are considered years, and only their two-digit
+// all-digit subdirectories are considered months. Other entries are ignored.
+//
+// Strict=false walks the entire tree under root with filepath.WalkDir and
+// considers every *.md file whose base name parses via ParseFilename, regardless
+// of nesting depth or parent directory naming. This is the layout downstream
+// tools such as notes-view consume; opt in explicitly when you need it.
+type ScanOptions struct {
+	Strict bool
+}
+
+// Scan enumerates notes under root.
+//
+// Called as Scan(root) it preserves the historical strict YYYY/MM/*.md
+// discipline. Pass ScanOptions{Strict: false} to walk every *.md file under
+// root regardless of layout. Only the first option in opts is consulted;
+// additional values are ignored.
+//
+// Unreadable subdirectories are logged to stderr and skipped in both modes,
+// matching the per-note parse-error behavior, so a single permission glitch
+// can't break ls/tags/resolve.
+func Scan(root string, opts ...ScanOptions) ([]Note, error) {
+	strict := true
+	if len(opts) > 0 {
+		strict = opts[0].Strict
+	}
+	if strict {
+		return scanStrict(root)
+	}
+	return scanLenient(root)
+}
+
+func scanStrict(root string) ([]Note, error) {
 	var notes []Note
 
 	years, err := os.ReadDir(root)
@@ -60,6 +93,50 @@ func Scan(root string) ([]Note, error) {
 				notes = append(notes, n)
 			}
 		}
+	}
+
+	sort.Slice(notes, func(i, j int) bool {
+		return notes[i].RelPath > notes[j].RelPath
+	})
+
+	return notes, nil
+}
+
+func scanLenient(root string) ([]Note, error) {
+	var notes []Note
+
+	walkErr := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			if path == root {
+				return err
+			}
+			fmt.Fprintf(os.Stderr, "warn: %s: %v\n", path, err)
+			if d != nil && d.IsDir() {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if filepath.Ext(d.Name()) != ".md" {
+			return nil
+		}
+		base := strings.TrimSuffix(d.Name(), ".md")
+		n, parseErr := ParseFilename(base)
+		if parseErr != nil {
+			return nil
+		}
+		rel, relErr := filepath.Rel(root, path)
+		if relErr != nil {
+			return nil
+		}
+		n.RelPath = rel
+		notes = append(notes, n)
+		return nil
+	})
+	if walkErr != nil {
+		return nil, walkErr
 	}
 
 	sort.Slice(notes, func(i, j int) bool {

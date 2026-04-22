@@ -102,6 +102,103 @@ func TestScanSkipsUnreadableDir(t *testing.T) {
 	}
 }
 
+// TestScanStrictExplicit verifies passing ScanOptions{Strict: true} matches the
+// no-options default and continues to ignore non-YYYY layouts.
+func TestScanStrictExplicit(t *testing.T) {
+	root := t.TempDir()
+	writeNote(t, root, "2026/01/20260101_1.md", "body\n")
+	writeNote(t, root, "drafts/20260102_2.md", "body\n")
+	writeNote(t, root, "inbox/2026/01/20260103_3.md", "body\n")
+
+	notes, err := Scan(root, ScanOptions{Strict: true})
+	if err != nil {
+		t.Fatalf("Scan strict error: %v", err)
+	}
+	if len(notes) != 1 || notes[0].ID != "1" {
+		t.Fatalf("Scan strict = %+v, want only ID=1", notes)
+	}
+}
+
+// TestScanLenient verifies Strict=false discovers any *.md note under root,
+// regardless of nesting depth or parent directory naming.
+func TestScanLenient(t *testing.T) {
+	root := t.TempDir()
+	writeNote(t, root, "2026/01/20260101_1.md", "body\n")
+	writeNote(t, root, "drafts/20260102_2_idea.md", "body\n")
+	writeNote(t, root, "inbox/2026/01/20260103_3.md", "body\n")
+	writeNote(t, root, "20260104_4.md", "body\n")
+	writeNote(t, root, "deep/a/b/c/20260105_5_nested.md", "body\n")
+	writeNote(t, root, "drafts/not-a-note.md", "body\n")
+	writeNote(t, root, "drafts/random_file.txt", "body\n")
+
+	notes, err := Scan(root, ScanOptions{Strict: false})
+	if err != nil {
+		t.Fatalf("Scan lenient error: %v", err)
+	}
+
+	// Sort is descending lexicographic on RelPath.
+	wantIDs := []string{"3", "2", "5", "4", "1"}
+	if len(notes) != len(wantIDs) {
+		t.Fatalf("Scan lenient returned %d notes (%+v), want %d", len(notes), notes, len(wantIDs))
+	}
+	for i, want := range wantIDs {
+		if notes[i].ID != want {
+			t.Errorf("notes[%d].ID = %q, want %q", i, notes[i].ID, want)
+		}
+	}
+
+	// RelPath should be the path relative to root, preserving the discovered layout.
+	for _, n := range notes {
+		if filepath.IsAbs(n.RelPath) {
+			t.Errorf("RelPath %q is absolute, want relative", n.RelPath)
+		}
+	}
+}
+
+// TestScanLenientDefaultIsStrict guards the contract that Scan(root) without
+// options stays strict — only the canonical YYYY/MM/*.md layout is enumerated.
+func TestScanLenientDefaultIsStrict(t *testing.T) {
+	root := t.TempDir()
+	writeNote(t, root, "2026/01/20260101_1.md", "body\n")
+	writeNote(t, root, "drafts/20260102_2.md", "body\n")
+
+	notes, err := Scan(root)
+	if err != nil {
+		t.Fatalf("Scan default error: %v", err)
+	}
+	if len(notes) != 1 || notes[0].ID != "1" {
+		t.Fatalf("default Scan = %+v, want only ID=1 (strict)", notes)
+	}
+}
+
+// TestScanLenientSkipsUnreadableDir verifies one unreadable subdirectory is
+// logged and skipped without aborting the lenient walk.
+func TestScanLenientSkipsUnreadableDir(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root bypasses directory permission checks")
+	}
+
+	root := t.TempDir()
+	writeNote(t, root, "drafts/20260101_1.md", "body\n")
+
+	bad := filepath.Join(root, "locked")
+	if err := os.MkdirAll(bad, 0o755); err != nil {
+		t.Fatalf("mkdir bad: %v", err)
+	}
+	if err := os.Chmod(bad, 0o000); err != nil {
+		t.Fatalf("chmod bad: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(bad, 0o755) })
+
+	notes, err := Scan(root, ScanOptions{Strict: false})
+	if err != nil {
+		t.Fatalf("Scan lenient error: %v", err)
+	}
+	if len(notes) != 1 || notes[0].ID != "1" {
+		t.Errorf("Scan lenient = %+v, want 1 note with ID=1", notes)
+	}
+}
+
 func TestResolveRef(t *testing.T) {
 	root := testdataPath(t)
 	absPath := filepath.Join(root, "2026/01/20260106_8823_999.md")
