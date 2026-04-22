@@ -190,7 +190,7 @@ func FilterByTags(notes []Note, root string, tags []string) ([]Note, error) {
 		if parseErr != nil {
 			fmt.Fprintf(os.Stderr, "warn: %s: %v\n", path, parseErr)
 		}
-		hashtags := extractHashtags(body)
+		hashtags := ExtractHashtags(body)
 		noteTags := make([]string, 0, len(fm.Tags)+len(hashtags))
 		noteTags = append(noteTags, fm.Tags...)
 		noteTags = append(noteTags, hashtags...)
