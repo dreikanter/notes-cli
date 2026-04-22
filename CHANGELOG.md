@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.91] - 2026-04-22
+
+### Added
+
+- `note.ScanOptions{Strict bool}` and a variadic `Scan(root string, opts ...ScanOptions) ([]Note, error)` signature let callers opt into a lenient walk. The default (no options, or `Strict: true`) preserves the existing YYYY/MM/*.md discipline; `Strict: false` walks every `.md` file under root with `filepath.WalkDir` regardless of nesting depth or parent-directory naming, matching the layout downstream tools like notes-view consume. Existing `Scan(root)` callers are unaffected ([#141])
+
 ## [0.1.90] - 2026-04-22
 
 ### Added
@@ -582,3 +588,4 @@
 [#132]: https://github.com/dreikanter/notes-cli/pull/132
 [#136]: https://github.com/dreikanter/notes-cli/pull/135
 [#146]: https://github.com/dreikanter/notes-cli/pull/146
+[#141]: https://github.com/dreikanter/notes-cli/issues/141
