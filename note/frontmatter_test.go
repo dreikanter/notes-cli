@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -21,6 +22,7 @@ func TestFrontmatterIsZero(t *testing.T) {
 		{"tags with value", Frontmatter{Tags: []string{"a"}}, false},
 		{"description set", Frontmatter{Description: "d"}, false},
 		{"public true", Frontmatter{Public: true}, false},
+		{"date set", Frontmatter{Date: time.Date(2026, 4, 22, 0, 0, 0, 0, time.UTC)}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -340,5 +342,106 @@ func TestTypeFieldOrder(t *testing.T) {
 	want := "---\ntitle: T\nslug: s\ntype: meeting\ntags:\n    - a\ndescription: D\npublic: true\n---\n\nbody\n"
 	if got != want {
 		t.Errorf("FormatNote =\n%q\nwant:\n%q", got, want)
+	}
+}
+
+func TestDateRoundTripDateOnly(t *testing.T) {
+	in := []byte("---\ntitle: T\ndate: 2026-04-22\n---\n\nbody\n")
+	fm, body, err := ParseNote(in)
+	if err != nil {
+		t.Fatalf("ParseNote: %v", err)
+	}
+	want := time.Date(2026, 4, 22, 0, 0, 0, 0, time.UTC)
+	if !fm.Date.Equal(want) {
+		t.Errorf("Date = %v, want %v", fm.Date, want)
+	}
+	if _, ok := fm.Extra["date"]; ok {
+		t.Error("Date should be on the typed field, not in Extra")
+	}
+	out := string(FormatNote(fm, body))
+	wantOut := "---\ntitle: T\ndate: 2026-04-22\n---\n\nbody\n"
+	if out != wantOut {
+		t.Errorf("FormatNote =\n%q\nwant:\n%q", out, wantOut)
+	}
+}
+
+func TestDateRoundTripRFC3339(t *testing.T) {
+	in := []byte("---\ntitle: T\ndate: 2026-04-22T15:30:00Z\n---\n\nbody\n")
+	fm, body, err := ParseNote(in)
+	if err != nil {
+		t.Fatalf("ParseNote: %v", err)
+	}
+	want := time.Date(2026, 4, 22, 15, 30, 0, 0, time.UTC)
+	if !fm.Date.Equal(want) {
+		t.Errorf("Date = %v, want %v", fm.Date, want)
+	}
+	out := string(FormatNote(fm, body))
+	wantOut := "---\ntitle: T\ndate: 2026-04-22T15:30:00Z\n---\n\nbody\n"
+	if out != wantOut {
+		t.Errorf("FormatNote =\n%q\nwant:\n%q", out, wantOut)
+	}
+}
+
+func TestDateFieldOrder(t *testing.T) {
+	fm := Frontmatter{
+		Title: "T", Slug: "s", Type: "meeting",
+		Date: time.Date(2026, 4, 22, 0, 0, 0, 0, time.UTC),
+		Tags: []string{"a"}, Description: "D", Public: true,
+	}
+	got := string(FormatNote(fm, []byte("body\n")))
+	want := "---\ntitle: T\nslug: s\ntype: meeting\ndate: 2026-04-22\ntags:\n    - a\ndescription: D\npublic: true\n---\n\nbody\n"
+	if got != want {
+		t.Errorf("FormatNote =\n%q\nwant:\n%q", got, want)
+	}
+}
+
+// Migration check: a note whose `date:` previously landed in Extra (because
+// `date` was not a reserved key) now populates the typed Date field instead.
+func TestDateMigratesFromExtra(t *testing.T) {
+	in := []byte("---\ntitle: Old note\ndate: 2025-01-15\nfeatured: true\n---\n\nbody\n")
+	fm, _, err := ParseNote(in)
+	if err != nil {
+		t.Fatalf("ParseNote: %v", err)
+	}
+	want := time.Date(2025, 1, 15, 0, 0, 0, 0, time.UTC)
+	if !fm.Date.Equal(want) {
+		t.Errorf("Date = %v, want %v", fm.Date, want)
+	}
+	if _, ok := fm.Extra["date"]; ok {
+		t.Error("date key should not be in Extra after migration")
+	}
+	if _, ok := fm.Extra["featured"]; !ok {
+		t.Error("non-reserved Extra keys should still round-trip")
+	}
+}
+
+func TestDateInvalidRejected(t *testing.T) {
+	in := []byte("---\ntitle: T\ndate: not-a-date\n---\n\nbody\n")
+	_, _, err := ParseNote(in)
+	if err == nil {
+		t.Fatal("expected error for malformed date")
+	}
+}
+
+func TestRoundtripWithDate(t *testing.T) {
+	cases := []Frontmatter{
+		{Date: time.Date(2026, 4, 22, 0, 0, 0, 0, time.UTC)},
+		{Title: "T", Date: time.Date(2026, 4, 22, 15, 30, 0, 0, time.UTC)},
+		{Title: "T", Slug: "s", Date: time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC), Tags: []string{"a"}},
+	}
+	for i, fm := range cases {
+		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
+			out := FormatNote(fm, []byte("body\n"))
+			gotF, gotBody, err := ParseNote(out)
+			if err != nil {
+				t.Fatalf("parse failed: %v", err)
+			}
+			if !gotF.Date.Equal(fm.Date) {
+				t.Errorf("Date: got %v, want %v", gotF.Date, fm.Date)
+			}
+			if string(gotBody) != "body\n" {
+				t.Errorf("body: got %q, want %q", string(gotBody), "body\n")
+			}
+		})
 	}
 }

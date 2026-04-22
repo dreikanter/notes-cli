@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.90] - 2026-04-22
+
+### Added
+
+- `note.Frontmatter` now has a reserved `Date time.Time` field (`yaml:"date,omitempty"`). Notes whose `date:` previously landed in `Frontmatter.Extra` now populate the typed field, and consumers no longer need to decode the `yaml.Node` themselves. Round-trip preserves the input format: date-only values (midnight UTC) serialize as `YYYY-MM-DD`; values with a non-zero time-of-day serialize as RFC3339. Consumers that need a date when `date:` is absent should fall back to the UID-derived date from the filename prefix, then file mtime — see `SCHEMA.md` ([#146])
+
 ## [0.1.89] - 2026-04-22
 
 ### Added
@@ -575,3 +581,4 @@
 [#131]: https://github.com/dreikanter/notes-cli/pull/131
 [#132]: https://github.com/dreikanter/notes-cli/pull/132
 [#136]: https://github.com/dreikanter/notes-cli/pull/135
+[#146]: https://github.com/dreikanter/notes-cli/pull/146

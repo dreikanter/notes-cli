@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"sort"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -32,6 +33,7 @@ type Frontmatter struct {
 	Title       string               `yaml:"title,omitempty"`
 	Slug        string               `yaml:"slug,omitempty"`
 	Type        string               `yaml:"type,omitempty"`
+	Date        time.Time            `yaml:"date,omitempty"`
 	Tags        []string             `yaml:"tags,omitempty"`
 	Description string               `yaml:"description,omitempty"`
 	Public      bool                 `yaml:"public,omitempty"`
@@ -40,8 +42,8 @@ type Frontmatter struct {
 
 // IsZero reports whether f has no fields set, including Extra.
 func (f Frontmatter) IsZero() bool {
-	return f.Title == "" && f.Slug == "" && f.Type == "" && len(f.Tags) == 0 &&
-		f.Description == "" && !f.Public && len(f.Extra) == 0
+	return f.Title == "" && f.Slug == "" && f.Type == "" && f.Date.IsZero() &&
+		len(f.Tags) == 0 && f.Description == "" && !f.Public && len(f.Extra) == 0
 }
 
 // UnmarshalYAML decodes a mapping node into f. Reserved keys populate the
@@ -73,6 +75,10 @@ func (f *Frontmatter) UnmarshalYAML(node *yaml.Node) error {
 		case "type":
 			if err := value.Decode(&f.Type); err != nil {
 				return fmt.Errorf("frontmatter type: %w", err)
+			}
+		case "date":
+			if err := value.Decode(&f.Date); err != nil {
+				return fmt.Errorf("frontmatter date: %w", err)
 			}
 		case "tags":
 			if err := value.Decode(&f.Tags); err != nil {
@@ -135,10 +141,30 @@ func (f Frontmatter) MarshalYAML() (interface{}, error) {
 			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!bool", Value: "true"},
 		)
 	}
+	appendTime := func(key string, value time.Time) {
+		if value.IsZero() {
+			return
+		}
+		// Date-only values (midnight UTC) serialize as YYYY-MM-DD so inputs
+		// written as `date: 2026-04-22` round-trip without gaining a time
+		// component. Values with a non-zero time-of-day use RFC3339.
+		var formatted string
+		if value.Hour() == 0 && value.Minute() == 0 && value.Second() == 0 &&
+			value.Nanosecond() == 0 && value.Location() == time.UTC {
+			formatted = value.Format("2006-01-02")
+		} else {
+			formatted = value.Format(time.RFC3339)
+		}
+		node.Content = append(node.Content,
+			&yaml.Node{Kind: yaml.ScalarNode, Value: key},
+			&yaml.Node{Kind: yaml.ScalarNode, Tag: "!!timestamp", Value: formatted},
+		)
+	}
 
 	appendString("title", f.Title)
 	appendString("slug", f.Slug)
 	appendString("type", f.Type)
+	appendTime("date", f.Date)
 	appendList("tags", f.Tags)
 	appendString("description", f.Description)
 	appendBool("public", f.Public)
