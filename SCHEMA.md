@@ -33,6 +33,17 @@ is called out in `CHANGELOG.md` when a new reserved key is added.
 - **Consumers:** notes-cli (filters, rollover), notes-pub / notes-view
   (optional rendering).
 
+### date
+- **Type:** timestamp (YAML `!!timestamp`: `YYYY-MM-DD` or RFC3339)
+- **Semantics:** canonical authored date for the note. Optional; when
+  absent, consumers should fall back to the UID-derived date encoded in
+  the filename prefix (e.g. `20260422_8823.md` → 2026-04-22), and then
+  to file mtime as a last resort. Date-only values (midnight UTC)
+  round-trip as `YYYY-MM-DD`; values with a non-zero time-of-day
+  round-trip in RFC3339.
+- **Consumers:** notes-view (timeline / sidebar sort), notes-pub (feed
+  `<published>` element, archive pages).
+
 ### tags
 - **Type:** list of strings
 - **Semantics:** free-form tags, matched case-sensitively. In-body
