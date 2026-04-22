@@ -3,7 +3,9 @@ module github.com/dreikanter/notes-cli
 go 1.25.7
 
 require (
+	github.com/fsnotify/fsnotify v1.5.4
 	github.com/spf13/cobra v1.10.2
+	github.com/spf13/pflag v1.0.9
 	golang.org/x/sync v0.20.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -51,7 +53,6 @@ require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/firefart/nonamedreturns v1.0.5 // indirect
-	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/ghostiam/protogetter v0.3.9 // indirect
 	github.com/go-critic/go-critic v0.12.0 // indirect
@@ -152,7 +153,6 @@ require (
 	github.com/spf13/afero v1.12.0 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/spf13/pflag v1.0.9 // indirect
 	github.com/spf13/viper v1.12.0 // indirect
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
 	github.com/stbenjam/no-sprintf-host-port v0.2.0 // indirect
