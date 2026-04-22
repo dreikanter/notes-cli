@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.95] - 2026-04-22
+
+### Added
+
+- `note/watch` subpackage: an fsnotify-based `Watcher` that observes `.md` note activity under a store root and emits a single debounced signal on `Events()` after filesystem activity settles. Pairs with `Index.Reload` (step 7) — watcher fires, consumer reloads, index coalescer collapses bursts into at most one rebuild. `watch.WithScanOptions` mirrors `note.ScanOptions`: strict mode (default) ignores events outside `YYYY/MM/*.md`, lenient mode accepts any `.md` anywhere beneath root. Newly created directories are registered automatically. Placed in a subpackage so `fsnotify` stays out of the CLI binary's dependency graph ([#145])
+
 ## [0.1.94] - 2026-04-22
 
 ### Added
@@ -610,3 +616,4 @@
 [#146]: https://github.com/dreikanter/notes-cli/pull/146
 [#149]: https://github.com/dreikanter/notes-cli/pull/149
 [#150]: https://github.com/dreikanter/notes-cli/pull/150
+[#145]: https://github.com/dreikanter/notes-cli/issues/145
