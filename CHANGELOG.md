@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.94] - 2026-04-22
+
+### Added
+
+- `note.Entry`, `note.Index`, and `note.Load` consolidate the per-query `Scan` → `FilterByTags` → `ExtractTags` re-read chain into a single concurrent pass. `Load(root, opts...)` walks the store once, parses frontmatter in parallel (workers default to `runtime.NumCPU()`), and returns an `*Index` with `Root`, `Entries`, `ByID`, `ByRel`, `BySlug`, `ByTag`, `Tags`, and `Resolve` methods. `Entry` embeds `Note` and adds `Frontmatter`, `ModTime`, and `Size`. Options: `WithFrontmatter(bool)` (default true), `WithWorkers(int)`, and `WithScanOptions(ScanOptions)`. `Index` methods take an internal `RWMutex` and defensive-copy `Frontmatter.Tags` / `Frontmatter.Aliases` on return so future `Reload` can swap state atomically. Existing `Scan`/`ExtractTags`/`ResolveRef` APIs are unchanged ([#150])
+
 ## [0.1.93] - 2026-04-22
 
 ### Added
@@ -603,3 +609,4 @@
 [#141]: https://github.com/dreikanter/notes-cli/issues/141
 [#146]: https://github.com/dreikanter/notes-cli/pull/146
 [#149]: https://github.com/dreikanter/notes-cli/pull/149
+[#150]: https://github.com/dreikanter/notes-cli/pull/150
