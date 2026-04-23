@@ -25,7 +25,6 @@ var updateCmd = &cobra.Command{
 		updateNoSlug, _ := cmd.Flags().GetBool("no-slug")
 		updateType, _ := cmd.Flags().GetString("type")
 		updateNoType, _ := cmd.Flags().GetBool("no-type")
-		updatePrivate, _ := cmd.Flags().GetBool("private")
 		syncFilename, _ := cmd.Flags().GetBool("sync-filename")
 
 		hasFlag := false
@@ -87,11 +86,13 @@ var updateCmd = &cobra.Command{
 			updated.Slug = updateSlug
 			contentChanged = true
 		}
-		if updatePrivate {
-			updated.Public = false
+		if cmd.Flags().Changed("private") {
+			v, _ := cmd.Flags().GetBool("private")
+			updated.Public = !v
 			contentChanged = true
 		} else if cmd.Flags().Changed("public") {
-			updated.Public = true
+			v, _ := cmd.Flags().GetBool("public")
+			updated.Public = v
 			contentChanged = true
 		}
 		if updateNoType {
