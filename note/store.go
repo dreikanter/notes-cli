@@ -1,6 +1,7 @@
 package note
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -9,6 +10,18 @@ import (
 	"sort"
 	"strings"
 )
+
+// ErrNotFound is returned (wrapped) by ResolveRef and resolveRelPath when a
+// note reference has no match in the store. Callers match with errors.Is:
+//
+//	_, err := note.ResolveRef(root, q)
+//	if errors.Is(err, note.ErrNotFound) { … }
+//
+// Index.Resolve and Index.ByID/ByRel/BySlug keep the (value, bool) miss
+// convention — the bool distinguishes "no match" from I/O failure without a
+// sentinel comparison. ResolveRef wraps because its public contract is
+// `(Ref, error)`; callers with an *Index can call Index.Resolve directly.
+var ErrNotFound = errors.New("note not found")
 
 // ScanOptions configures Scan's directory traversal.
 //
@@ -189,7 +202,8 @@ func WithDate(date string) ResolveOption {
 //
 // Implementation routes through Index.Resolve on a WithFrontmatter(false)
 // load, so CLI commands that already hold an Index can call Index.Resolve
-// directly and skip this wrapper.
+// directly and skip this wrapper. A miss returns an error wrapping
+// [ErrNotFound]; callers match with errors.Is.
 func ResolveRef(root, query string, opts ...ResolveOption) (Ref, error) {
 	idx, err := Load(root, WithFrontmatter(false))
 	if err != nil {
@@ -201,7 +215,7 @@ func ResolveRef(root, query string, opts ...ResolveOption) (Ref, error) {
 		return Ref{}, err
 	}
 	if !ok {
-		return Ref{}, fmt.Errorf("note not found: %s", strings.TrimSpace(query))
+		return Ref{}, fmt.Errorf("%w: %s", ErrNotFound, strings.TrimSpace(query))
 	}
 	return e.Ref, nil
 }
@@ -223,7 +237,7 @@ func resolveRelPath(root, query string) (string, error) {
 	}
 	absQuery, err := filepath.EvalSymlinks(queryPath)
 	if err != nil {
-		return "", fmt.Errorf("note not found: %s", query)
+		return "", fmt.Errorf("%w: %s", ErrNotFound, query)
 	}
 	rel, err := filepath.Rel(absRoot, absQuery)
 	if err != nil || strings.HasPrefix(rel, "..") {
