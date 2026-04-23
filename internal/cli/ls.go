@@ -28,7 +28,7 @@ var lsCmd = &cobra.Command{
 		entries := idx.Entries()
 
 		if lsName != "" {
-			entries = note.Filter(entries, lsName)
+			entries = note.FilterByFilename(entries, lsName)
 		}
 
 		entries = applyFilters(entries, f)

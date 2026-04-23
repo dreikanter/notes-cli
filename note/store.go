@@ -246,8 +246,8 @@ func resolveRelPath(root, query string) (string, error) {
 	return rel, nil
 }
 
-// Filter returns entries whose filename contains the fragment (case-insensitive).
-func Filter(entries []Entry, fragment string) []Entry {
+// FilterByFilename returns entries whose filename contains the fragment (case-insensitive).
+func FilterByFilename(entries []Entry, fragment string) []Entry {
 	fragment = strings.ToLower(fragment)
 	var results []Entry
 	for _, e := range entries {
