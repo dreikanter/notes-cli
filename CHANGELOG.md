@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.9] - 2026-04-23
+
+### Changed
+
+- `note.ExtractTags(root)` removed. It ran a full `Load` on every call and hid body hashtags behind the unexported `bodyHashtags` field, so external consumers either paid for a re-walk or lost access. Callers that already hold an `Index` should combine `Index.Tags()` (frontmatter aggregate) with per-entry `Entry.BodyHashtags()` themselves; the `notes tags` CLI command routes through `Index` and is unchanged from the user's side. ([#201])
+- `note.Entry.BodyHashtags() []string` exported as a defensive-copy accessor returning the lowercased, deduplicated hashtags extracted from the note body during `Load`. Returns nil when `Load` ran with `WithFrontmatter(false)` or the body had no hashtags. Mutating the returned slice does not affect the index ([#201])
+
+[#201]: https://github.com/dreikanter/notes-cli/pull/201
+
 ## [0.2.8] - 2026-04-23
 
 ### Changed
