@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestLoadTestdata(t *testing.T) {
@@ -468,5 +470,51 @@ func TestReloadCoalescesRequestsDuringInflight(t *testing.T) {
 
 	if _, ok := idx.ByRel("2026/02/20260201_9999_late.md"); !ok {
 		t.Error("late note must be indexed once second Reload's done fires")
+	}
+}
+
+// TestCloneEntryDeepCopiesExtra pins that cloneEntry returns an Entry whose
+// Frontmatter.Extra map (and each yaml.Node's Content slice) is independent
+// of the index-internal copy. Without this a web-service consumer that
+// mutates Extra after a lookup races every other reader of the same entry.
+func TestCloneEntryDeepCopiesExtra(t *testing.T) {
+	root := t.TempDir()
+	writeNote(t, root, "2026/01/20260101_1.md",
+		"---\ntitle: T\ncustom:\n  - one\n  - two\n---\n\nbody\n")
+
+	idx, err := Load(root)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	first, ok := idx.ByID("1")
+	if !ok {
+		t.Fatalf("ByID(1) missing")
+	}
+	if first.Frontmatter.Extra == nil {
+		t.Fatal("Extra not populated; test note has a custom key")
+	}
+
+	// Mutate the returned clone.
+	first.Frontmatter.Extra["custom"] = yaml.Node{Kind: yaml.ScalarNode, Value: "mutated"}
+	first.Frontmatter.Extra["injected"] = yaml.Node{Kind: yaml.ScalarNode, Value: "new"}
+	if orig, ok := first.Frontmatter.Extra["custom"]; ok && len(orig.Content) > 0 {
+		orig.Content[0] = &yaml.Node{Kind: yaml.ScalarNode, Value: "zapped"}
+	}
+
+	// Fresh lookup must be untouched.
+	second, ok := idx.ByID("1")
+	if !ok {
+		t.Fatalf("second ByID(1) missing")
+	}
+	if _, injected := second.Frontmatter.Extra["injected"]; injected {
+		t.Error("injected key leaked into index-internal Extra")
+	}
+	got := second.Frontmatter.Extra["custom"]
+	if got.Kind != yaml.SequenceNode {
+		t.Fatalf("custom kind = %v, want SequenceNode — clone shared map with index", got.Kind)
+	}
+	if len(got.Content) != 2 || got.Content[0].Value != "one" {
+		t.Errorf("custom[0].Value = %q, want \"one\" — nested Content was aliased", got.Content[0].Value)
 	}
 }

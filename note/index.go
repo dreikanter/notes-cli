@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"golang.org/x/sync/errgroup"
+	"gopkg.in/yaml.v3"
 )
 
 // Entry is a fully-hydrated note record: the filename-derived Ref plus
@@ -492,13 +493,16 @@ func (i *Index) Resolve(query string, opts ...ResolveOption) (Entry, bool, error
 	return Entry{}, false, nil
 }
 
-// cloneEntry returns e with Tags and Aliases deep-copied so callers can
+// cloneEntry returns e with every slice/map field deep-copied so callers can
 // mutate the returned value without racing other readers of the same index
-// entry. Frontmatter.Extra is shared by reference — callers treating Extra
-// as mutable should copy it themselves.
+// entry. Previously Frontmatter.Extra aliased the index-internal map, which
+// a web-service consumer that mutates Extra could turn into a data race; now
+// the map, its yaml.Node values, and their nested Content slices are all
+// copied.
 func cloneEntry(e Entry) Entry {
 	e.Frontmatter.Tags = cloneStrings(e.Frontmatter.Tags)
 	e.Frontmatter.Aliases = cloneStrings(e.Frontmatter.Aliases)
+	e.Frontmatter.Extra = cloneExtra(e.Frontmatter.Extra)
 	e.bodyHashtags = cloneStrings(e.bodyHashtags)
 	return e
 }
@@ -510,6 +514,38 @@ func cloneStrings(s []string) []string {
 	out := make([]string, len(s))
 	copy(out, s)
 	return out
+}
+
+// cloneExtra deep-copies the Frontmatter.Extra map. Each yaml.Node value is
+// copied by value and its recursive Content slice is cloned so mutations on
+// the returned map — including reassignment of a node's children — cannot
+// race the index-internal copy.
+func cloneExtra(m map[string]yaml.Node) map[string]yaml.Node {
+	if m == nil {
+		return nil
+	}
+	out := make(map[string]yaml.Node, len(m))
+	for k, v := range m {
+		out[k] = cloneYAMLNode(v)
+	}
+	return out
+}
+
+func cloneYAMLNode(n yaml.Node) yaml.Node {
+	if len(n.Content) == 0 {
+		n.Content = nil
+		return n
+	}
+	children := make([]*yaml.Node, len(n.Content))
+	for i, c := range n.Content {
+		if c == nil {
+			continue
+		}
+		clone := cloneYAMLNode(*c)
+		children[i] = &clone
+	}
+	n.Content = children
+	return n
 }
 
 // normalizeHashtags lowercases and deduplicates a hashtag list from
