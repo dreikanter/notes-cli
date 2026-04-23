@@ -5,6 +5,7 @@
 ### Changed
 
 - `note.ResolveRef` and `note.ResolveRefDate` collapsed into a single `ResolveRef(root, query, opts...)` with a `WithDate` functional option, matching the `Load` options pattern. The `Date` suffix described a parameter rather than the operation, and `ResolveRef` was a zero-value wrapper over `ResolveRefDate(root, query, "")`. Date-aware call sites (`resolve`, `rm`) now pass `note.WithDate(date)`; plain callers keep their existing two-arg form. Adding future constraints (e.g. `WithType`) becomes a one-liner ([#161])
+- `Index.Resolve` now accepts the same variadic `ResolveOption` set, so `WithDate` threads through the cached index and the by-ID / by-path map lookups stay O(1) even when date-filtered (the match is discarded after the fact if its `Date` does not match). The duplicated priority chain in `resolveInEntries` (which linear-scanned a pre-filtered entry slice because it had lost the index maps) is gone; `ResolveRef` is now a thin `Load` + `Index.Resolve` wrapper ([#161])
 
 ## [0.1.105] - 2026-04-23
 
