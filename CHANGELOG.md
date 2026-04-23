@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.1] - 2026-04-23
+
+### Added
+
+- `note/mem_store.go`: `MemStore` — in-memory `Store` backed by `map[int]StoreEntry` with a `sync.RWMutex`. Test-only; validates the `Store` interface shape before `OSStore` is built. `IDs`, `All`, and `Find` sort newest-first by `Meta.CreatedAt` with a deterministic higher-ID tie-break. `Put` assigns IDs as `max(existing) + 1`, sets `Meta.CreatedAt` to now when zero, and always sets `Meta.UpdatedAt`. Includes a compile-time `var _ Store = (*MemStore)(nil)` assertion ([#231]).
+
+[#231]: https://github.com/dreikanter/notes-cli/pull/231
+
 ## [0.3.0] - 2026-04-23
 
 ### Added
