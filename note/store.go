@@ -11,10 +11,10 @@ import (
 	"strings"
 )
 
-// ErrNotFound is returned (wrapped) from resolveRelPath when a path-like
-// query cannot be followed under the store root. Callers that wrap a miss
-// from Index.Resolve into an error should reuse this sentinel so users can
-// match with errors.Is:
+// ErrNotFound is the package-wide "entry not found" sentinel. It is returned
+// (wrapped) by Store.Get, Store.Find, and Store.Delete when no entry matches,
+// and by resolveRelPath when a path-like query cannot be followed under the
+// store root. Callers match with errors.Is:
 //
 //	if errors.Is(err, note.ErrNotFound) { … }
 //
