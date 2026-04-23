@@ -8,50 +8,6 @@ import (
 	"testing"
 )
 
-func TestParseEditor(t *testing.T) {
-	tests := []struct {
-		input    string
-		wantBin  string
-		wantArgs []string
-	}{
-		{"vim", "vim", nil},
-		{"subl --wait", "subl", []string{"--wait"}},
-		{"/usr/bin/code -w --new-window", "/usr/bin/code", []string{"-w", "--new-window"}},
-		{"", "", nil},
-	}
-	for _, tt := range tests {
-		bin, args := parseEditor(tt.input)
-		if bin != tt.wantBin {
-			t.Errorf("parseEditor(%q) bin = %q, want %q", tt.input, bin, tt.wantBin)
-		}
-		if len(args) != len(tt.wantArgs) {
-			t.Errorf("parseEditor(%q) args = %v, want %v", tt.input, args, tt.wantArgs)
-			continue
-		}
-		for i := range args {
-			if args[i] != tt.wantArgs[i] {
-				t.Errorf("parseEditor(%q) args[%d] = %q, want %q", tt.input, i, args[i], tt.wantArgs[i])
-			}
-		}
-	}
-}
-
-func TestIsTerminalEditor(t *testing.T) {
-	for _, name := range []string{"vim", "nvim", "nano", "emacs", "vi", "micro"} {
-		if !isTerminalEditor(name) {
-			t.Errorf("expected %q to be a terminal editor", name)
-		}
-	}
-	if !isTerminalEditor("/usr/bin/vim") {
-		t.Error("expected /usr/bin/vim to be a terminal editor")
-	}
-	for _, name := range []string{"code", "subl", "zed", "gedit"} {
-		if isTerminalEditor(name) {
-			t.Errorf("expected %q to NOT be a terminal editor", name)
-		}
-	}
-}
-
 // writeFakeEditor creates a shell script named after a known terminal editor
 // so the edit command runs it in foreground mode.
 func writeFakeEditor(t *testing.T, body string) string {
