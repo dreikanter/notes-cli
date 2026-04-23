@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.11] - 2026-04-23
+
+### Changed
+
+- `writeAtomic` and `rootDirMode` moved from `internal/cli` to the `note` package as exported `note.WriteAtomic` and `note.StoreDirMode`. These are pure file-I/O primitives with no CLI dependency; exporting them makes them available to downstream consumers such as notes-pub / notes-view without duplication ([#203])
+
+[#203]: https://github.com/dreikanter/notes-cli/pull/203
+
 ## [0.2.10] - 2026-04-23
 
 ### Changed
