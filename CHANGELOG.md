@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.111] - 2026-04-23
+
+### Changed
+
+- `note.Scan` swaps its `opts ...ScanOptions` variadic (documented as "only the first is honored") for the functional-options pattern already used by `Load` and `ResolveRef`. New `ScanOption func(*ScanOptions)` and `WithStrict(b bool) ScanOption`. `Scan(root)` still defaults to strict; `Scan(root, WithStrict(false))` walks the full tree. The `ScanOptions` struct stays because it's still the argument to `Load`'s `WithScanOptions` and the watcher's `WithScanOptions`. Internal call sites and tests updated to the new form ([#168])
+
 ## [0.1.107] - 2026-04-23
 
 ### Changed
@@ -710,3 +716,4 @@
 [#162]: https://github.com/dreikanter/notes-cli/pull/162
 [#161]: https://github.com/dreikanter/notes-cli/pull/161
 [#163]: https://github.com/dreikanter/notes-cli/pull/163
+[#168]: https://github.com/dreikanter/notes-cli/pull/168
