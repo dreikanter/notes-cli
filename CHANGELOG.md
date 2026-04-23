@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.12] - 2026-04-23
+
+### Changed
+
+- `parseEditor` and `isTerminalEditor` moved from `internal/cli/edit.go` to a new `internal/editor` package as exported `editor.Parse` and `editor.IsTerminal`. The new package is independently testable with no Cobra dependency ([#204])
+
+[#204]: https://github.com/dreikanter/notes-cli/pull/204
+
 ## [0.2.11] - 2026-04-23
 
 ### Changed
