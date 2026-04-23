@@ -1,6 +1,7 @@
 package note
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -255,6 +256,34 @@ func TestResolveRefWithDateEmptyQueryFiltersByDate(t *testing.T) {
 	}
 	if got.ID != "8818" {
 		t.Errorf("ResolveRef empty + WithDate(20260104) = %q, want 8818", got.ID)
+	}
+}
+
+// TestResolveRefErrNotFound pins that misses from ResolveRef wrap ErrNotFound
+// so callers can match with errors.Is — both the priority-chain miss path
+// (unknown slug / unknown id) and the path-resolution miss (a path that
+// EvalSymlinks cannot follow). Index.Resolve continues to keep the (value,
+// bool) convention for misses, unchanged.
+func TestResolveRefErrNotFound(t *testing.T) {
+	root := testdataPath(t)
+	cases := []struct {
+		name  string
+		query string
+	}{
+		{"unknown id", "9999"},
+		{"unknown slug", "no-such-slug-xyz"},
+		{"missing path", filepath.Join(root, "2099/12/20991231_1.md")},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ResolveRef(root, tc.query)
+			if err == nil {
+				t.Fatalf("expected error")
+			}
+			if !errors.Is(err, ErrNotFound) {
+				t.Errorf("errors.Is(err, ErrNotFound) = false (err=%v)", err)
+			}
+		})
 	}
 }
 
