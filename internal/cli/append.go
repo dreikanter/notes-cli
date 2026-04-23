@@ -37,33 +37,14 @@ var appendCmd = &cobra.Command{
 
 		f := readFilterFlags(cmd)
 
-		var targetPath string
-
-		if len(args) == 1 {
-			if f.active() {
-				return fmt.Errorf("cannot combine positional argument with filter flags")
-			}
-
-			n, resolveErr := resolveRef(cmd, root, args[0])
-			if resolveErr != nil {
-				return resolveErr
-			}
-			targetPath = filepath.Join(root, n.RelPath)
-		} else if f.active() {
-			idx, loadErr := note.Load(root, loadOptsFor(cmd, f)...)
-			if loadErr != nil {
-				return loadErr
-			}
-
-			entries := applyFilters(idx.Entries(), f)
-
-			if len(entries) == 0 {
-				return fmt.Errorf("no notes found matching filters: %s", f.describe())
-			}
-			targetPath = filepath.Join(root, entries[0].RelPath)
-		} else {
+		entry, ok, err := resolveOrFilter(cmd, root, args, f)
+		if err != nil {
+			return err
+		}
+		if !ok {
 			return fmt.Errorf("specify a note by positional argument or filter flags (--type, --slug, --tag, --today)")
 		}
+		targetPath := filepath.Join(root, entry.RelPath)
 
 		// Read existing file
 		existing, err := os.ReadFile(targetPath)

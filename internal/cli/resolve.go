@@ -40,12 +40,12 @@ positional resolution to notes dated today.`,
 				return fmt.Errorf("cannot combine positional argument with filter flags")
 			}
 
-			var date string
+			var ropts []note.ResolveOption
 			if f.Today {
-				date = time.Now().Format(note.DateFormat)
+				ropts = []note.ResolveOption{note.WithDate(time.Now().Format(note.DateFormat))}
 			}
 
-			n, err := resolveRef(cmd, root, args[0], note.WithDate(date))
+			n, err := resolveRef(cmd, root, args[0], ropts...)
 			if err != nil {
 				return err
 			}
@@ -54,21 +54,24 @@ positional resolution to notes dated today.`,
 			return nil
 		}
 
-		idx, err := note.Load(root, loadOptsFor(cmd, f)...)
+		entry, ok, err := resolveOrFilter(cmd, root, nil, f)
 		if err != nil {
 			return err
 		}
-
-		entries := applyFilters(idx.Entries(), f)
-
-		if len(entries) == 0 {
-			if f.active() {
-				return fmt.Errorf("no notes found matching filters: %s", f.describe())
+		if !ok {
+			// No filters active: return the most recent note.
+			idx, loadErr := note.Load(root, loadOptsFor(cmd, f)...)
+			if loadErr != nil {
+				return loadErr
 			}
-			return fmt.Errorf("no notes found")
+			all := idx.Entries()
+			if len(all) == 0 {
+				return fmt.Errorf("no notes found")
+			}
+			entry = all[0]
 		}
 
-		fmt.Fprintln(cmd.OutOrStdout(), filepath.Join(root, entries[0].RelPath))
+		fmt.Fprintln(cmd.OutOrStdout(), filepath.Join(root, entry.RelPath))
 		return nil
 	},
 }

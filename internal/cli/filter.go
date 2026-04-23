@@ -112,6 +112,42 @@ func applyFilters(entries []note.Entry, f filterOpts) []note.Entry {
 	return entries
 }
 
+// resolveOrFilter returns the first note matching a positional ref or filter
+// flags. When a positional arg and active filter flags are both present it
+// returns an error. When filters are active but nothing matches it returns a
+// "no notes found" error. When neither args nor filters are given it returns
+// (Entry{}, false, nil); callers decide how to handle that case.
+func resolveOrFilter(
+	cmd *cobra.Command,
+	root string,
+	args []string,
+	f filterOpts,
+	resolveOpts ...note.ResolveOption,
+) (note.Entry, bool, error) {
+	if len(args) == 1 {
+		if f.active() {
+			return note.Entry{}, false, fmt.Errorf("cannot combine positional argument with filter flags")
+		}
+		n, err := resolveRef(cmd, root, args[0], resolveOpts...)
+		if err != nil {
+			return note.Entry{}, false, err
+		}
+		return note.Entry{Ref: n}, true, nil
+	}
+	if f.active() {
+		idx, err := note.Load(root, loadOptsFor(cmd, f)...)
+		if err != nil {
+			return note.Entry{}, false, err
+		}
+		entries := applyFilters(idx.Entries(), f)
+		if len(entries) == 0 {
+			return note.Entry{}, false, fmt.Errorf("no notes found matching filters: %s", f.describe())
+		}
+		return entries[0], true, nil
+	}
+	return note.Entry{}, false, nil
+}
+
 // addFilterFlags registers the common filter flags on a command.
 func addFilterFlags(cmd *cobra.Command) {
 	cmd.Flags().Bool("today", false, "only match notes created today")
