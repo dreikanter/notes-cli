@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.18] - 2026-04-23
+
+### Changed
+
+- `resolveOrFilter(cmd, root, args, f, resolveOpts...)` added to `internal/cli/filter.go`. It handles the repeated "positional ref → `resolveRef`; filter flags → load+filter; neither → caller decides" pattern. `append` and `read` now delegate to it; `resolve` uses it for the filter-only path and keeps its positional-arg path inline since it allows `--today` alongside a positional argument ([#210])
+
+[#210]: https://github.com/dreikanter/notes-cli/pull/210
+
 ## [0.2.17] - 2026-04-23
 
 ### Changed

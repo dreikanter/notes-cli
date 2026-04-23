@@ -21,32 +21,14 @@ var readCmd = &cobra.Command{
 		f := readFilterFlags(cmd)
 		noFrontmatter, _ := cmd.Flags().GetBool("no-frontmatter")
 
-		var relPath string
-
-		if len(args) == 1 {
-			if f.active() {
-				return fmt.Errorf("cannot combine positional argument with filter flags")
-			}
-			n, err := resolveRef(cmd, root, args[0])
-			if err != nil {
-				return err
-			}
-			relPath = n.RelPath
-		} else if f.active() {
-			idx, err := note.Load(root, loadOptsFor(cmd, f)...)
-			if err != nil {
-				return err
-			}
-
-			entries := applyFilters(idx.Entries(), f)
-
-			if len(entries) == 0 {
-				return fmt.Errorf("no notes found matching filters: %s", f.describe())
-			}
-			relPath = entries[0].RelPath
-		} else {
+		entry, ok, err := resolveOrFilter(cmd, root, args, f)
+		if err != nil {
+			return err
+		}
+		if !ok {
 			return fmt.Errorf("specify a note by positional argument or filter flags (--type, --slug, --tag, --today)")
 		}
+		relPath := entry.RelPath
 
 		data, err := os.ReadFile(filepath.Join(root, relPath))
 		if err != nil {
