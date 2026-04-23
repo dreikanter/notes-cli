@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.5] - 2026-04-23
+
+### Changed
+
+- `note.Index.Reload()` now returns `<-chan error` (was `<-chan struct{}`). A successful rebuild closes the channel with the zero value; a failing rebuild sends the error on the buffered channel before close, so `err := <-ch` returns the build error or nil. The logger installed via `WithLogger` still sees the same error. Long-lived services can now react to a specific reload's outcome instead of only being able to wait for "some build has finished" ([#197])
+
+[#197]: https://github.com/dreikanter/notes-cli/pull/197
+
 ## [0.2.4] - 2026-04-23
 
 ### Changed
