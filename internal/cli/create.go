@@ -50,7 +50,7 @@ func writeAtomic(path string, data []byte) error {
 // createNote creates a new note file with optional frontmatter and body content.
 // Returns the absolute path to the created file.
 func createNote(p createNoteParams) (string, error) {
-	today := time.Now().Format("20060102")
+	today := time.Now().Format(note.DateFormat)
 
 	id, err := note.NextID(p.Root)
 	if err != nil {
@@ -74,7 +74,10 @@ func createNote(p createNoteParams) (string, error) {
 		Description: p.Description,
 		Public:      p.Public,
 	}
-	content := note.FormatNote(fm, []byte(p.Body))
+	content, err := note.FormatNote(fm, []byte(p.Body))
+	if err != nil {
+		return "", err
+	}
 
 	if err := writeAtomic(fullPath, content); err != nil {
 		return "", err

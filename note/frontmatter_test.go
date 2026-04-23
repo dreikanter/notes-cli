@@ -9,6 +9,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+func mustFormatNote(t *testing.T, f Frontmatter, body []byte) []byte {
+	t.Helper()
+	out, err := FormatNote(f, body)
+	if err != nil {
+		t.Fatalf("FormatNote: %v", err)
+	}
+	return out
+}
+
 func TestFrontmatterIsZero(t *testing.T) {
 	tests := []struct {
 		name string
@@ -148,14 +157,14 @@ func TestFormatNoteSnapshotAllFields(t *testing.T) {
 		Public:      true,
 	}
 	want := "---\ntitle: T\nslug: s\ntags:\n    - a\ndescription: D\npublic: true\n---\n\nbody\n"
-	got := string(FormatNote(f, []byte("body\n")))
+	got := string(mustFormatNote(t, f, []byte("body\n")))
 	if got != want {
 		t.Errorf("got:\n%q\nwant:\n%q", got, want)
 	}
 }
 
 func TestFormatNoteEmptyFrontmatter(t *testing.T) {
-	if got := string(FormatNote(Frontmatter{}, []byte("body\n"))); got != "body\n" {
+	if got := string(mustFormatNote(t, Frontmatter{}, []byte("body\n"))); got != "body\n" {
 		t.Errorf("got %q, want %q", got, "body\n")
 	}
 }
@@ -173,7 +182,7 @@ func TestRoundtrip(t *testing.T) {
 	}
 	for i, fm := range cases {
 		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
-			out := FormatNote(fm, []byte("body\n"))
+			out := mustFormatNote(t, fm, []byte("body\n"))
 			gotF, gotBody, err := ParseNote(out)
 			if err != nil {
 				t.Fatalf("parse failed: %v", err)
@@ -209,7 +218,7 @@ func TestStripFrontmatter(t *testing.T) {
 		{"multiple closing delimiters", "---\na\n---\nb\n---\n\nBody\n", "b\n---\n\nBody\n"},
 		{
 			name:  "roundtrip with FormatNote",
-			input: string(FormatNote(Frontmatter{Tags: []string{"journal"}, Description: "A note"}, []byte("# Content\n"))),
+			input: string(mustFormatNote(t, Frontmatter{Tags: []string{"journal"}, Description: "A note"}, []byte("# Content\n"))),
 			want:  "# Content\n",
 		},
 	}
@@ -244,7 +253,7 @@ func TestParseNoteCRLFInteriorPreserved(t *testing.T) {
 }
 
 func TestFormatNoteWritesLFOnly(t *testing.T) {
-	out := FormatNote(Frontmatter{Title: "T"}, []byte("hello\r\nworld\r\n"))
+	out := mustFormatNote(t, Frontmatter{Title: "T"}, []byte("hello\r\nworld\r\n"))
 	wantPrefix := "---\ntitle: T\n---\n\n"
 	if string(out[:len(wantPrefix)]) != wantPrefix {
 		t.Errorf("delimiter lines not LF-only: %q", string(out[:len(wantPrefix)]))
@@ -288,7 +297,7 @@ func TestFormatNoteExtraPreservedInAlphaOrder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ParseNote: %v", err)
 	}
-	out := string(FormatNote(fm, body))
+	out := string(mustFormatNote(t, fm, body))
 	// Reserved "title" first; Extra keys alpha-sorted: alpha, featured, zebra.
 	want := "---\ntitle: T\nalpha: 1\nfeatured: true\nzebra: striped\n---\n\nbody\n"
 	if out != want {
@@ -301,7 +310,7 @@ func TestFormatNoteEmptyFrontmatterWithExtraOnly(t *testing.T) {
 		"featured": {Kind: yaml.ScalarNode, Value: "true", Tag: "!!bool"},
 	}}
 	want := "---\nfeatured: true\n---\n\nbody\n"
-	got := string(FormatNote(fm, []byte("body\n")))
+	got := string(mustFormatNote(t, fm, []byte("body\n")))
 	if got != want {
 		t.Errorf("got %q, want %q", got, want)
 	}
@@ -328,7 +337,7 @@ func TestTypeRoundTrips(t *testing.T) {
 	if fm.Type != "meeting" {
 		t.Errorf("Type = %q, want meeting", fm.Type)
 	}
-	out := string(FormatNote(fm, body))
+	out := string(mustFormatNote(t, fm, body))
 	want := "---\ntitle: T\ntype: meeting\n---\n\nbody\n"
 	if out != want {
 		t.Errorf("out = %q, want %q", out, want)
@@ -340,7 +349,7 @@ func TestTypeFieldOrder(t *testing.T) {
 		Title: "T", Slug: "s", Type: "meeting",
 		Tags: []string{"a"}, Description: "D", Public: true,
 	}
-	got := string(FormatNote(fm, []byte("body\n")))
+	got := string(mustFormatNote(t, fm, []byte("body\n")))
 	want := "---\ntitle: T\nslug: s\ntype: meeting\ntags:\n    - a\ndescription: D\npublic: true\n---\n\nbody\n"
 	if got != want {
 		t.Errorf("FormatNote =\n%q\nwant:\n%q", got, want)
@@ -360,7 +369,7 @@ func TestDateRoundTripDateOnly(t *testing.T) {
 	if _, ok := fm.Extra["date"]; ok {
 		t.Error("Date should be on the typed field, not in Extra")
 	}
-	out := string(FormatNote(fm, body))
+	out := string(mustFormatNote(t, fm, body))
 	wantOut := "---\ntitle: T\ndate: 2026-04-22\n---\n\nbody\n"
 	if out != wantOut {
 		t.Errorf("FormatNote =\n%q\nwant:\n%q", out, wantOut)
@@ -377,7 +386,7 @@ func TestDateRoundTripRFC3339(t *testing.T) {
 	if !fm.Date.Equal(want) {
 		t.Errorf("Date = %v, want %v", fm.Date, want)
 	}
-	out := string(FormatNote(fm, body))
+	out := string(mustFormatNote(t, fm, body))
 	wantOut := "---\ntitle: T\ndate: 2026-04-22T15:30:00Z\n---\n\nbody\n"
 	if out != wantOut {
 		t.Errorf("FormatNote =\n%q\nwant:\n%q", out, wantOut)
@@ -390,7 +399,7 @@ func TestDateFieldOrder(t *testing.T) {
 		Date: time.Date(2026, 4, 22, 0, 0, 0, 0, time.UTC),
 		Tags: []string{"a"}, Description: "D", Public: true,
 	}
-	got := string(FormatNote(fm, []byte("body\n")))
+	got := string(mustFormatNote(t, fm, []byte("body\n")))
 	want := "---\ntitle: T\nslug: s\ntype: meeting\ndate: 2026-04-22\ntags:\n    - a\ndescription: D\npublic: true\n---\n\nbody\n"
 	if got != want {
 		t.Errorf("FormatNote =\n%q\nwant:\n%q", got, want)
@@ -437,7 +446,7 @@ func TestAliasesRoundTrip(t *testing.T) {
 	if _, ok := fm.Extra["aliases"]; ok {
 		t.Error("Aliases should be on the typed field, not in Extra")
 	}
-	out := string(FormatNote(fm, body))
+	out := string(mustFormatNote(t, fm, body))
 	want := "---\ntitle: T\naliases:\n    - old-slug\n    - even-older\n---\n\nbody\n"
 	if out != want {
 		t.Errorf("FormatNote =\n%q\nwant:\n%q", out, want)
@@ -452,7 +461,7 @@ func TestAliasesFieldOrder(t *testing.T) {
 		Aliases:     []string{"old"},
 		Description: "D", Public: true,
 	}
-	got := string(FormatNote(fm, []byte("body\n")))
+	got := string(mustFormatNote(t, fm, []byte("body\n")))
 	want := "---\ntitle: T\nslug: s\ntype: meeting\ndate: 2026-04-22\ntags:\n    - a\naliases:\n    - old\ndescription: D\npublic: true\n---\n\nbody\n"
 	if got != want {
 		t.Errorf("FormatNote =\n%q\nwant:\n%q", got, want)
@@ -497,7 +506,7 @@ func TestRoundtripWithAliases(t *testing.T) {
 	}
 	for i, fm := range cases {
 		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
-			out := FormatNote(fm, []byte("body\n"))
+			out := mustFormatNote(t, fm, []byte("body\n"))
 			gotF, gotBody, err := ParseNote(out)
 			if err != nil {
 				t.Fatalf("parse failed: %v", err)
@@ -520,7 +529,7 @@ func TestRoundtripWithDate(t *testing.T) {
 	}
 	for i, fm := range cases {
 		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
-			out := FormatNote(fm, []byte("body\n"))
+			out := mustFormatNote(t, fm, []byte("body\n"))
 			gotF, gotBody, err := ParseNote(out)
 			if err != nil {
 				t.Fatalf("parse failed: %v", err)

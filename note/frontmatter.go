@@ -214,15 +214,16 @@ func ParseNote(data []byte) (Frontmatter, []byte, error) {
 }
 
 // FormatNote serialises frontmatter followed by body. Omits the frontmatter
-// block entirely when f.IsZero(). yaml.Marshal cannot fail for this struct,
-// so marshal errors are treated as impossible and cause a panic.
-func FormatNote(f Frontmatter, body []byte) []byte {
+// block entirely when f.IsZero(). Marshal errors surface to the caller;
+// f.Extra values sourced from arbitrary YAML input can in principle fail to
+// re-encode, so callers should handle the error rather than assume success.
+func FormatNote(f Frontmatter, body []byte) ([]byte, error) {
 	if f.IsZero() {
-		return body
+		return body, nil
 	}
 	out, err := yaml.Marshal(f)
 	if err != nil {
-		panic(fmt.Sprintf("yaml.Marshal Frontmatter: %v", err))
+		return nil, fmt.Errorf("marshal frontmatter: %w", err)
 	}
 	const prefix = "---\n"
 	const suffix = "---\n\n"
@@ -231,7 +232,7 @@ func FormatNote(f Frontmatter, body []byte) []byte {
 	buf = append(buf, out...)
 	buf = append(buf, suffix...)
 	buf = append(buf, body...)
-	return buf
+	return buf, nil
 }
 
 // StripFrontmatter returns data with any leading frontmatter block removed.
