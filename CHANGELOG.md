@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.8] - 2026-04-23
+
+### Changed
+
+- Rename `note.Filter` → `note.FilterByFilename` for symmetry with `FilterByTags`, `FilterByDate`, `FilterBySlug`, and `FilterByTypes`. The bare `Filter` name hid the fact that it only matches against the base filename; the `By…` suffix makes the axis explicit. Internal CLI call site (`internal/cli/ls.go`) updated. External callers importing `note.Filter` need a straight rename ([#200])
+
+[#200]: https://github.com/dreikanter/notes-cli/pull/200
+
 ## [0.2.7] - 2026-04-23
 
 ### Changed

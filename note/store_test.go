@@ -287,7 +287,7 @@ func TestResolveRefErrNotFound(t *testing.T) {
 	}
 }
 
-func TestFilter(t *testing.T) {
+func TestFilterByFilename(t *testing.T) {
 	entries := []Entry{
 		{Ref: Ref{RelPath: "2026/01/20260106_8823.md", Type: ""}},
 		{Ref: Ref{RelPath: "2026/01/20260102_8814.todo.md", Type: "todo"}},
@@ -309,9 +309,9 @@ func TestFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := Filter(entries, tt.fragment)
+			got := FilterByFilename(entries, tt.fragment)
 			if len(got) != tt.wantLen {
-				t.Errorf("Filter(%q) returned %d results, want %d", tt.fragment, len(got), tt.wantLen)
+				t.Errorf("FilterByFilename(%q) returned %d results, want %d", tt.fragment, len(got), tt.wantLen)
 			}
 		})
 	}
