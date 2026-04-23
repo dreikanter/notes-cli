@@ -367,6 +367,34 @@ func (i *Index) Entries() []Entry {
 	return out
 }
 
+// Snapshot returns a zero-copy, read-only view of the current index state.
+// The caller must not mutate the returned slice or any Entry within it;
+// doing so races concurrent Reload calls. Use Entries for a safe mutable
+// copy. The snapshot reflects the index at the moment of the call and does
+// not update if Reload runs afterwards.
+func (i *Index) Snapshot() Snapshot {
+	i.mu.RLock()
+	defer i.mu.RUnlock()
+	return Snapshot{entries: i.entries}
+}
+
+// Snapshot is a zero-copy, read-only view of an Index's entry list.
+// Obtain one via Index.Snapshot; do not construct directly.
+type Snapshot struct {
+	entries []Entry
+}
+
+// Entries returns the snapshot's entry slice directly, without copying.
+// The caller must not mutate the slice or any Entry within it.
+func (s Snapshot) Entries() []Entry {
+	return s.entries
+}
+
+// Len returns the number of entries in the snapshot.
+func (s Snapshot) Len() int {
+	return len(s.entries)
+}
+
 // ByID returns the entry with the given numeric ID, or false. When multiple
 // entries share an ID the newest wins.
 func (i *Index) ByID(id string) (Entry, bool) {
