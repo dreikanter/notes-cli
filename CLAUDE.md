@@ -66,3 +66,5 @@ a follow-up commit on the same branch:
 ## Pull Requests
 
 Use `.github/pull_request_template.md` for all PR bodies. When running `gh pr create`, pass its content via `--body`.
+
+Never include session URLs (e.g. `https://claude.ai/code/session_...`) or any other tooling attribution in PR bodies, commit messages, or anywhere else in the repository.
