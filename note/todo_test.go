@@ -7,22 +7,23 @@ import (
 
 func TestParseTask(t *testing.T) {
 	tests := []struct {
-		name    string
-		line    string
-		wantNil bool
-		marker  string
-		isDaily bool
-		isMoved bool
+		name      string
+		line      string
+		wantNil   bool
+		wantState TaskState
+		isDaily   bool
+		isMoved   bool
 	}{
-		{"pending", "[ ] Buy milk", false, " ", false, false},
-		{"pending with bullet", "- [ ] Buy milk", false, " ", false, false},
-		{"pending indented", "  [ ] Buy milk", false, " ", false, false},
-		{"pending indented bullet", "  - [ ] Buy milk", false, " ", false, false},
-		{"completed", "[+] Done task", false, "+", false, false},
-		{"daily", "[ ] Standup #daily", false, " ", true, false},
-		{"daily completed", "[+] Standup #daily", false, "+", true, false},
-		{"moved", "- [ ] (moved) Buy milk", false, " ", false, true},
-		{"moved with other tag", "- [ ] (moved) (private) Do thing", false, " ", false, true},
+		{"pending", "[ ] Buy milk", false, TaskPending, false, false},
+		{"pending with bullet", "- [ ] Buy milk", false, TaskPending, false, false},
+		{"pending indented", "  [ ] Buy milk", false, TaskPending, false, false},
+		{"pending indented bullet", "  - [ ] Buy milk", false, TaskPending, false, false},
+		{"completed plus", "[+] Done task", false, TaskDone, false, false},
+		{"completed x", "[x] Done task", false, TaskDone, false, false},
+		{"daily", "[ ] Standup #daily", false, TaskPending, true, false},
+		{"daily completed", "[+] Standup #daily", false, TaskDone, true, false},
+		{"moved", "- [ ] (moved) Buy milk", false, TaskPending, false, true},
+		{"moved with other tag", "- [ ] (moved) (private) Do thing", false, TaskPending, false, true},
 		{"not a task", "Just a regular line", true, "", false, false},
 		{"empty", "", true, "", false, false},
 		{"header", "# Todo", true, "", false, false},
@@ -41,8 +42,8 @@ func TestParseTask(t *testing.T) {
 			if task == nil {
 				t.Fatalf("expected non-nil for %q", tt.line)
 			}
-			if task.Marker != tt.marker {
-				t.Errorf("marker: got %q, want %q", task.Marker, tt.marker)
+			if task.State != tt.wantState {
+				t.Errorf("state: got %q, want %q", task.State, tt.wantState)
 			}
 			if task.IsDaily != tt.isDaily {
 				t.Errorf("isDaily: got %v, want %v", task.IsDaily, tt.isDaily)
@@ -51,6 +52,27 @@ func TestParseTask(t *testing.T) {
 				t.Errorf("isMoved: got %v, want %v", task.IsMoved, tt.isMoved)
 			}
 		})
+	}
+}
+
+func TestParseTaskText(t *testing.T) {
+	tests := []struct {
+		line string
+		want string
+	}{
+		{"[ ] Buy milk", "Buy milk"},
+		{"- [ ] Buy milk #daily", "Buy milk #daily"},
+		{"  - [ ] (moved) Do thing", "(moved) Do thing"},
+		{"[+] Done", "Done"},
+	}
+	for _, tt := range tests {
+		task := ParseTask(tt.line, 0)
+		if task == nil {
+			t.Fatalf("expected task for %q", tt.line)
+		}
+		if task.Text != tt.want {
+			t.Errorf("Text for %q: got %q, want %q", tt.line, task.Text, tt.want)
+		}
 	}
 }
 
@@ -174,8 +196,8 @@ func TestRolloverTasksSkipsMoved(t *testing.T) {
 	if len(result.CarriedTasks) != 1 {
 		t.Fatalf("carried %d tasks, want 1", len(result.CarriedTasks))
 	}
-	if !strings.Contains(result.CarriedTasks[0].Suffix, "Fresh task") {
-		t.Errorf("expected Fresh task, got: %s", result.CarriedTasks[0].Suffix)
+	if !strings.Contains(result.CarriedTasks[0].Text, "Fresh task") {
+		t.Errorf("expected Fresh task, got: %s", result.CarriedTasks[0].Text)
 	}
 
 	// Already-moved task should not be re-tagged
@@ -196,7 +218,7 @@ func TestRolloverTasksDailyAlwaysCarried(t *testing.T) {
 	if len(result.CarriedTasks) != 1 {
 		t.Fatalf("carried %d tasks, want 1", len(result.CarriedTasks))
 	}
-	if !strings.Contains(result.CarriedTasks[0].Suffix, "Standup") {
+	if !strings.Contains(result.CarriedTasks[0].Text, "Standup") {
 		t.Error("expected daily task to be carried over")
 	}
 }
@@ -227,12 +249,13 @@ slug: todo
 }
 
 func TestFormatTodoContent(t *testing.T) {
-	tasks := []Task{
-		{Prefix: "[", Marker: " ", Suffix: "] Task one"},
-		{Prefix: "[", Marker: " ", Suffix: "] Task two"},
+	task1 := ParseTask("[ ] Task one", 0)
+	task2 := ParseTask("[ ] Task two", 1)
+	if task1 == nil || task2 == nil {
+		t.Fatal("expected tasks")
 	}
 
-	content := FormatTodoContent(tasks)
+	content := FormatTodoContent([]Task{*task1, *task2})
 
 	if strings.HasPrefix(content, "---") {
 		t.Errorf("unexpected frontmatter, got:\n%s", content)
