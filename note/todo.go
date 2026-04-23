@@ -5,18 +5,45 @@ import (
 	"strings"
 )
 
+// TaskState describes the completion state of a task line.
+type TaskState string
+
+const (
+	// TaskPending is an incomplete task (marker " ").
+	TaskPending TaskState = "pending"
+	// TaskDone is a completed task (marker "+" or "x").
+	TaskDone TaskState = "done"
+	// TaskOther covers any marker character not mapped above.
+	TaskOther TaskState = "other"
+)
+
 // taskRe matches lines like "  - [ ] some task" or "[ ] some task".
 var taskRe = regexp.MustCompile(`^(\s*(?:- )?\[)(.)(\].*)$`)
 
 // Task represents a parsed task line from a todo note.
 type Task struct {
-	Line       string // original full line
-	Prefix     string // everything before the marker character: e.g. "  - ["
-	Marker     string // single char marker: " ", "x", "+", etc.
-	Suffix     string // everything after marker: e.g. "] some task"
-	IsDaily    bool   // whether line contains #daily
-	IsMoved    bool   // whether line contains (moved)
-	LineNumber int    // 0-based index in the source file lines
+	Line       string    // original full line
+	State      TaskState // completion state derived from the marker
+	Text       string    // trimmed task text, e.g. "Buy milk #daily"
+	IsDaily    bool      // whether line contains #daily
+	IsMoved    bool      // whether line contains (moved)
+	LineNumber int       // 0-based index in the source file lines
+
+	// regex capture groups kept unexported; use Reassembled / WithTag to rebuild lines.
+	prefix string
+	marker string
+	suffix string
+}
+
+func markerToState(m string) TaskState {
+	switch m {
+	case " ":
+		return TaskPending
+	case "+", "x":
+		return TaskDone
+	default:
+		return TaskOther
+	}
 }
 
 // ParseTask attempts to parse a line as a task. Returns nil if not a task line.
@@ -25,20 +52,29 @@ func ParseTask(line string, lineNumber int) *Task {
 	if m == nil {
 		return nil
 	}
+	suffix := m[3]
+	text := ""
+	if len(suffix) >= 2 && suffix[:2] == "] " {
+		text = strings.TrimSpace(suffix[2:])
+	} else if len(suffix) > 1 {
+		text = strings.TrimSpace(suffix[1:])
+	}
 	return &Task{
 		Line:       line,
-		Prefix:     m[1],
-		Marker:     m[2],
-		Suffix:     m[3],
+		State:      markerToState(m[2]),
+		Text:       text,
 		IsDaily:    strings.Contains(line, "#daily"),
 		IsMoved:    strings.Contains(line, "(moved)"),
 		LineNumber: lineNumber,
+		prefix:     m[1],
+		marker:     m[2],
+		suffix:     suffix,
 	}
 }
 
 // Reassembled returns the task line with a new marker.
 func (t *Task) Reassembled(marker string) string {
-	return t.Prefix + marker + t.Suffix
+	return t.prefix + marker + t.suffix
 }
 
 // WithTag returns the task line with a tag inserted after the marker bracket.
@@ -46,15 +82,15 @@ func (t *Task) Reassembled(marker string) string {
 // Returns the line unchanged if the tag is already present.
 func (t *Task) WithTag(tag string) string {
 	tagStr := "(" + tag + ")"
-	if strings.Contains(t.Suffix, tagStr) {
+	if strings.Contains(t.suffix, tagStr) {
 		return t.Line
 	}
-	// Suffix starts with "] ", insert tag after the "] "
-	if len(t.Suffix) >= 2 && t.Suffix[:2] == "] " {
-		return t.Prefix + t.Marker + "] " + tagStr + " " + t.Suffix[2:]
+	// suffix starts with "] ", insert tag after the "] "
+	if len(t.suffix) >= 2 && t.suffix[:2] == "] " {
+		return t.prefix + t.marker + "] " + tagStr + " " + t.suffix[2:]
 	}
-	// Suffix is just "]" with no text
-	return t.Prefix + t.Marker + "] " + tagStr + t.Suffix[1:]
+	// suffix is just "]" with no text
+	return t.prefix + t.marker + "] " + tagStr + t.suffix[1:]
 }
 
 // ExtractTasks parses all task lines from a todo file's content lines.
@@ -85,9 +121,9 @@ func RolloverTasks(prevLines []string) RolloverResult {
 
 	addTask := func(t Task) {
 		// Strip (moved) from suffix so carried tasks are clean
-		t.Suffix = strings.Replace(t.Suffix, "(moved) ", "", 1)
+		t.suffix = strings.Replace(t.suffix, "(moved) ", "", 1)
 		// Normalize: strip leading whitespace, bullet, and marker for dedup
-		key := strings.TrimSpace(t.Suffix)
+		key := strings.TrimSpace(t.suffix)
 		if seen[key] {
 			return
 		}
@@ -100,10 +136,10 @@ func RolloverTasks(prevLines []string) RolloverResult {
 		case t.IsDaily:
 			// Daily tasks are always carried over regardless of marker
 			addTask(t)
-			if t.Marker == " " && !t.IsMoved {
+			if t.marker == " " && !t.IsMoved {
 				updated[t.LineNumber] = t.WithTag("moved")
 			}
-		case t.Marker == " " && !t.IsMoved:
+		case t.marker == " " && !t.IsMoved:
 			// Pending tasks: carry over and tag as moved in previous
 			addTask(t)
 			updated[t.LineNumber] = t.WithTag("moved")
