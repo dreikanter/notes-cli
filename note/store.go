@@ -146,41 +146,39 @@ func scanLenient(root string) ([]Note, error) {
 	return notes, nil
 }
 
+// ResolveOption configures ResolveRef. All options are optional; pass zero or
+// more.
+type ResolveOption func(*resolveConfig)
+
+type resolveConfig struct {
+	date string
+}
+
+// WithDate restricts ResolveRef candidates to notes matching the given
+// YYYYMMDD date string. An empty string disables the filter (the default).
+func WithDate(date string) ResolveOption {
+	return func(c *resolveConfig) { c.date = date }
+}
+
 // ResolveRef resolves a note reference to a Note using the following priority:
 //  1. Numeric ID — exact match; all-digit queries never fall through
 //  2. Type with special behavior (todo, backlog, weekly) — most recent match
 //  3. Path — absolute or relative path with separator, exact match under root
 //  4. Slug substring — most recent note whose slug contains the query
 //
+// Options narrow the candidate set before the priority chain runs; see
+// WithDate.
+//
 // Implementation routes through Index.Resolve on a WithFrontmatter(false)
 // load, so CLI commands that already hold an Index can call Index.Resolve
 // directly and skip this wrapper.
-func ResolveRef(root, query string) (Note, error) {
-	return ResolveRefDate(root, query, "")
-}
-
-// ResolveRefDate works like ResolveRef but optionally restricts candidates to
-// notes matching the given YYYYMMDD date string. Pass "" to skip date filtering.
-func ResolveRefDate(root, query, date string) (Note, error) {
+func ResolveRef(root, query string, opts ...ResolveOption) (Note, error) {
 	idx, err := Load(root, WithFrontmatter(false))
 	if err != nil {
 		return Note{}, err
 	}
 
-	if date == "" {
-		e, ok, err := idx.Resolve(query)
-		if err != nil {
-			return Note{}, err
-		}
-		if !ok {
-			return Note{}, fmt.Errorf("note not found: %s", strings.TrimSpace(query))
-		}
-		return e.Note, nil
-	}
-
-	entries := idx.Entries()
-	filtered := filterEntriesByDate(entries, date)
-	e, ok, err := resolveInEntries(root, filtered, query)
+	e, ok, err := idx.Resolve(query, opts...)
 	if err != nil {
 		return Note{}, err
 	}
@@ -188,70 +186,6 @@ func ResolveRefDate(root, query, date string) (Note, error) {
 		return Note{}, fmt.Errorf("note not found: %s", strings.TrimSpace(query))
 	}
 	return e.Note, nil
-}
-
-// filterEntriesByDate returns entries whose Date field matches the given
-// YYYYMMDD string, preserving input order.
-func filterEntriesByDate(entries []Entry, date string) []Entry {
-	var out []Entry
-	for _, e := range entries {
-		if e.Date == date {
-			out = append(out, e)
-		}
-	}
-	return out
-}
-
-// resolveInEntries applies the ResolveRef priority chain to an arbitrary
-// (pre-filtered) entry slice. It mirrors Index.Resolve but linear-scans,
-// because date-restricted subsets don't share the index's maps.
-func resolveInEntries(root string, entries []Entry, query string) (Entry, bool, error) {
-	query = strings.TrimSpace(query)
-
-	if query == "" {
-		if len(entries) == 0 {
-			return Entry{}, false, nil
-		}
-		return entries[0], true, nil
-	}
-
-	if IsID(query) {
-		for _, e := range entries {
-			if e.ID == query {
-				return e, true, nil
-			}
-		}
-		return Entry{}, false, nil
-	}
-
-	if HasSpecialBehavior(query) {
-		for _, e := range entries {
-			if e.Type == query {
-				return e, true, nil
-			}
-		}
-	}
-
-	if filepath.IsAbs(query) || strings.ContainsAny(query, `/\`) {
-		rel, err := resolveRelPath(root, query)
-		if err != nil {
-			return Entry{}, false, err
-		}
-		for _, e := range entries {
-			if e.RelPath == rel {
-				return e, true, nil
-			}
-		}
-		return Entry{}, false, nil
-	}
-
-	for _, e := range entries {
-		if e.Slug != "" && strings.Contains(e.Slug, query) {
-			return e, true, nil
-		}
-	}
-
-	return Entry{}, false, nil
 }
 
 // resolveRelPath converts a path-like query to a note RelPath under root.

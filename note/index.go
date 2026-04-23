@@ -403,6 +403,10 @@ func (i *Index) Tags() []string {
 //     filesystem resolution; errors on paths outside root or missing files
 //  5. slug substring → most recent entry whose Slug contains the query
 //
+// Options narrow the candidate set before the chain runs; see WithDate.
+// With a date filter the by-ID and by-path map lookups stay O(1); the match
+// is discarded after the fact if its Date does not match.
+//
 // Returns (entry, true, nil) on match, (zero, false, nil) on no match, and
 // (zero, false, err) only for genuine failures (path outside root, symlink
 // resolution error). The bool-vs-error split lets callers distinguish
@@ -413,7 +417,12 @@ func (i *Index) Tags() []string {
 // writer is not blocked on filesystem round-trips. This relies on the
 // swap-only Reload discipline — the aliased slice and maps must remain
 // immutable for the lifetime of the snapshot.
-func (i *Index) Resolve(query string) (Entry, bool, error) {
+func (i *Index) Resolve(query string, opts ...ResolveOption) (Entry, bool, error) {
+	cfg := resolveConfig{}
+	for _, o := range opts {
+		o(&cfg)
+	}
+
 	query = strings.TrimSpace(query)
 
 	i.mu.RLock()
@@ -422,6 +431,16 @@ func (i *Index) Resolve(query string) (Entry, bool, error) {
 	byID := i.byID
 	byRel := i.byRel
 	i.mu.RUnlock()
+
+	if cfg.date != "" {
+		filtered := make([]Entry, 0, len(entries))
+		for _, e := range entries {
+			if e.Date == cfg.date {
+				filtered = append(filtered, e)
+			}
+		}
+		entries = filtered
+	}
 
 	if query == "" {
 		if len(entries) == 0 {
@@ -433,6 +452,9 @@ func (i *Index) Resolve(query string) (Entry, bool, error) {
 	if IsID(query) {
 		e, ok := byID[query]
 		if !ok {
+			return Entry{}, false, nil
+		}
+		if cfg.date != "" && e.Date != cfg.date {
 			return Entry{}, false, nil
 		}
 		return cloneEntry(e), true, nil
@@ -453,6 +475,9 @@ func (i *Index) Resolve(query string) (Entry, bool, error) {
 		}
 		e, ok := byRel[rel]
 		if !ok {
+			return Entry{}, false, nil
+		}
+		if cfg.date != "" && e.Date != cfg.date {
 			return Entry{}, false, nil
 		}
 		return cloneEntry(e), true, nil

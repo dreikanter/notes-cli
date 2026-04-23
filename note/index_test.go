@@ -289,6 +289,54 @@ func TestIndexResolve(t *testing.T) {
 	}
 }
 
+func TestIndexResolveWithDate(t *testing.T) {
+	root := testdataPath(t)
+	idx, err := Load(root)
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		query   string
+		date    string
+		wantID  string
+		wantOK  bool
+		wantErr bool
+	}{
+		{"empty + date picks newest on date", "", "20260104", "8818", true, false},
+		{"empty + date with no matches misses", "", "19000101", "", false, false},
+		{"id match + matching date hits", "8818", "20260104", "8818", true, false},
+		{"id match + wrong date misses (no fallthrough)", "8818", "20260106", "", false, false},
+		{"slug + matching date hits", "meeting", "20260104", "8818", true, false},
+		{"slug + non-matching date misses", "meeting", "20260106", "", false, false},
+		{"type todo + matching date hits", "todo", "20260102", "8814", true, false},
+		{"type todo + non-matching date misses", "todo", "20260106", "", false, false},
+		{"path + matching date hits", filepath.Join(root, "2026", "01", "20260106_8823_999.md"), "20260106", "8823", true, false},
+		{"path + non-matching date misses", filepath.Join(root, "2026", "01", "20260106_8823_999.md"), "20260104", "", false, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e, ok, err := idx.Resolve(tt.query, WithDate(tt.date))
+			if tt.wantErr {
+				if err == nil {
+					t.Errorf("Resolve(%q, WithDate(%q)) expected error", tt.query, tt.date)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Resolve(%q, WithDate(%q)) unexpected error: %v", tt.query, tt.date, err)
+			}
+			if ok != tt.wantOK {
+				t.Fatalf("Resolve(%q, WithDate(%q)) ok = %v, want %v", tt.query, tt.date, ok, tt.wantOK)
+			}
+			if ok && e.ID != tt.wantID {
+				t.Errorf("Resolve(%q, WithDate(%q)).ID = %q, want %q", tt.query, tt.date, e.ID, tt.wantID)
+			}
+		})
+	}
+}
+
 func TestIndexResolveEmptyStore(t *testing.T) {
 	root := t.TempDir()
 	idx, err := Load(root)
