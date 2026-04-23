@@ -247,14 +247,14 @@ func TestResolveRef(t *testing.T) {
 	}
 }
 
-func TestResolveRefDateEmptyQueryFiltersByDate(t *testing.T) {
+func TestResolveRefWithDateEmptyQueryFiltersByDate(t *testing.T) {
 	root := testdataPath(t)
-	got, err := ResolveRefDate(root, "", "20260104")
+	got, err := ResolveRef(root, "", WithDate("20260104"))
 	if err != nil {
-		t.Fatalf("ResolveRefDate empty query error: %v", err)
+		t.Fatalf("ResolveRef WithDate empty query error: %v", err)
 	}
 	if got.ID != "8818" {
-		t.Errorf("ResolveRefDate empty + date 20260104 = %q, want 8818", got.ID)
+		t.Errorf("ResolveRef empty + WithDate(20260104) = %q, want 8818", got.ID)
 	}
 }
 

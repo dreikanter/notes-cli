@@ -27,7 +27,7 @@ var rmCmd = &cobra.Command{
 			date = time.Now().Format(note.DateFormat)
 		}
 
-		n, err := note.ResolveRefDate(root, args[0], date)
+		n, err := note.ResolveRef(root, args[0], note.WithDate(date))
 		if err != nil {
 			return err
 		}

@@ -146,28 +146,44 @@ func scanLenient(root string) ([]Note, error) {
 	return notes, nil
 }
 
+// ResolveOption configures ResolveRef. All options are optional; pass zero or
+// more.
+type ResolveOption func(*resolveConfig)
+
+type resolveConfig struct {
+	date string
+}
+
+// WithDate restricts ResolveRef candidates to notes matching the given
+// YYYYMMDD date string. An empty string disables the filter (the default).
+func WithDate(date string) ResolveOption {
+	return func(c *resolveConfig) { c.date = date }
+}
+
 // ResolveRef resolves a note reference to a Note using the following priority:
 //  1. Numeric ID — exact match; all-digit queries never fall through
 //  2. Type with special behavior (todo, backlog, weekly) — most recent match
 //  3. Path — absolute or relative path with separator, exact match under root
 //  4. Slug substring — most recent note whose slug contains the query
 //
+// Options narrow the candidate set before the priority chain runs; see
+// WithDate.
+//
 // Implementation routes through Index.Resolve on a WithFrontmatter(false)
 // load, so CLI commands that already hold an Index can call Index.Resolve
 // directly and skip this wrapper.
-func ResolveRef(root, query string) (Note, error) {
-	return ResolveRefDate(root, query, "")
-}
+func ResolveRef(root, query string, opts ...ResolveOption) (Note, error) {
+	cfg := resolveConfig{}
+	for _, o := range opts {
+		o(&cfg)
+	}
 
-// ResolveRefDate works like ResolveRef but optionally restricts candidates to
-// notes matching the given YYYYMMDD date string. Pass "" to skip date filtering.
-func ResolveRefDate(root, query, date string) (Note, error) {
 	idx, err := Load(root, WithFrontmatter(false))
 	if err != nil {
 		return Note{}, err
 	}
 
-	if date == "" {
+	if cfg.date == "" {
 		e, ok, err := idx.Resolve(query)
 		if err != nil {
 			return Note{}, err
@@ -179,7 +195,7 @@ func ResolveRefDate(root, query, date string) (Note, error) {
 	}
 
 	entries := idx.Entries()
-	filtered := filterEntriesByDate(entries, date)
+	filtered := filterEntriesByDate(entries, cfg.date)
 	e, ok, err := resolveInEntries(root, filtered, query)
 	if err != nil {
 		return Note{}, err
