@@ -5,42 +5,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
+	"github.com/dreikanter/notes-cli/internal/editor"
 	"github.com/spf13/cobra"
 )
-
-// terminalEditors is the set of editors that need a terminal (stdin/stdout).
-// Everything else is assumed to be a GUI app and launched detached.
-var terminalEditors = map[string]bool{
-	"ed":     true,
-	"emacs":  true,
-	"jed":    true,
-	"joe":    true,
-	"mcedit": true,
-	"micro":  true,
-	"nano":   true,
-	"ne":     true,
-	"nvim":   true,
-	"pico":   true,
-	"vi":     true,
-	"vim":    true,
-}
-
-// parseEditor splits an editor string (e.g. "subl --wait") into the binary
-// name and any extra arguments.
-func parseEditor(raw string) (string, []string) {
-	parts := strings.Fields(raw)
-	if len(parts) == 0 {
-		return "", nil
-	}
-	return parts[0], parts[1:]
-}
-
-// isTerminalEditor returns true if the given binary name is a known terminal editor.
-func isTerminalEditor(bin string) bool {
-	return terminalEditors[filepath.Base(bin)]
-}
 
 var editCmd = &cobra.Command{
 	Use:   "edit <id|type|query>",
@@ -69,14 +37,14 @@ The editor value may include arguments, e.g. EDITOR="subl --wait".`,
 			return fmt.Errorf("no editor configured: set $EDITOR or $VISUAL")
 		}
 
-		bin, extraArgs := parseEditor(raw)
+		bin, extraArgs := editor.Parse(raw)
 		path := filepath.Join(root, n.RelPath)
 		cmdArgs := make([]string, 0, len(extraArgs)+1)
 		cmdArgs = append(cmdArgs, extraArgs...)
 		cmdArgs = append(cmdArgs, path)
 		ec := exec.Command(bin, cmdArgs...)
 
-		if isTerminalEditor(bin) {
+		if editor.IsTerminal(bin) {
 			ec.Stdin = os.Stdin
 			ec.Stdout = os.Stdout
 			ec.Stderr = os.Stderr
