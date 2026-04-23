@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.108] - 2026-04-23
+
+### Changed
+
+- `note.IsDigits` exported as a non-empty ASCII-digit predicate, carved out of the existing internal `isDigits`. `IsID` now delegates to it (same semantics, no behavior change). `note/watch/watch.go`'s `shouldWatchDir` and `strictNotePath` now call `note.IsDigits` instead of `note.IsID` — the check there is about a `YYYY` or `MM` directory segment being digits, not about the segment being a note ID. Internal `isDigits` callers (`ParseFilename` date check, `Scan`'s year/month directory filters, `ValidateSlug`'s all-digits rejection) follow the rename ([#166])
+
 ## [0.1.107] - 2026-04-23
 
 ### Changed
@@ -710,3 +716,4 @@
 [#162]: https://github.com/dreikanter/notes-cli/pull/162
 [#161]: https://github.com/dreikanter/notes-cli/pull/161
 [#163]: https://github.com/dreikanter/notes-cli/pull/163
+[#166]: https://github.com/dreikanter/notes-cli/pull/166
