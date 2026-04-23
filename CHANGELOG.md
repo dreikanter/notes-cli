@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.100] - 2026-04-23
+
+### Changed
+
+- `notes new` and `notes new-todo` now write the new note file via the existing `writeAtomic` helper (tmp + rename), matching every other note-write path in the CLI (`append`, `annotate`, `update`, and the rollover-update step of `new-todo`). A mid-write crash can no longer leave a truncated note at the target path; failure modes collapse to "nothing written" or "fully written" ([#134])
+
 ## [0.1.99] - 2026-04-22
 
 ### Changed
@@ -659,3 +665,4 @@
 [#143]: https://github.com/dreikanter/notes-cli/issues/143
 [#144]: https://github.com/dreikanter/notes-cli/issues/144
 [#140]: https://github.com/dreikanter/notes-cli/issues/140
+[#134]: https://github.com/dreikanter/notes-cli/issues/134

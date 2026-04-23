@@ -76,8 +76,8 @@ func createNote(p createNoteParams) (string, error) {
 	}
 	content := note.FormatNote(fm, []byte(p.Body))
 
-	if err := os.WriteFile(fullPath, content, 0o644); err != nil {
-		return "", fmt.Errorf("cannot write note: %w", err)
+	if err := writeAtomic(fullPath, content); err != nil {
+		return "", err
 	}
 
 	return fullPath, nil
