@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.101] - 2026-04-23
+
+### Changed
+
+- `note.FormatNote` now returns `([]byte, error)` instead of panicking when `yaml.Marshal` fails. `Frontmatter.Extra` holds arbitrary `yaml.Node` values sourced from user input, which can in principle fail to re-encode (cycles, aliases), so the prior "impossible" panic was unsafe. All four production callers (`create`, `new_todo`, `annotate`, `update`) and the `frontmatter_test.go` suite (via a new `mustFormatNote` helper) handle the error ([#158])
+- `note.DateFormat` exported as the canonical `"20060102"` layout constant. The literal was duplicated across 11 call sites in `note/` and `internal/cli/` (production and tests); every site now references the constant, giving a single source of truth for UID-derived and CLI-facing dates ([#158])
+
 ## [0.1.100] - 2026-04-23
 
 ### Changed
@@ -668,3 +675,4 @@
 [#140]: https://github.com/dreikanter/notes-cli/issues/140
 [#134]: https://github.com/dreikanter/notes-cli/issues/134
 [#156]: https://github.com/dreikanter/notes-cli/pull/156
+[#158]: https://github.com/dreikanter/notes-cli/pull/158
