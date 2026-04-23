@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.14] - 2026-04-23
+
+### Changed
+
+- `note.Task` fields `Prefix`, `Marker`, and `Suffix` are now unexported — they were regex capture intermediates that leaked parse details to external consumers. Replaced with exported `State TaskState` (values: `TaskPending`, `TaskDone`, `TaskOther`) and `Text string` (trimmed task text after the bracket). `Reassembled` and `WithTag` continue to work; internal `RolloverTasks` uses the unexported captures ([#206])
+
+[#206]: https://github.com/dreikanter/notes-cli/pull/206
+
 ## [0.2.13] - 2026-04-23
 
 ### Changed
