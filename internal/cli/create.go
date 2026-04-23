@@ -74,7 +74,10 @@ func createNote(p createNoteParams) (string, error) {
 		Description: p.Description,
 		Public:      p.Public,
 	}
-	content := note.FormatNote(fm, []byte(p.Body))
+	content, err := note.FormatNote(fm, []byte(p.Body))
+	if err != nil {
+		return "", err
+	}
 
 	if err := writeAtomic(fullPath, content); err != nil {
 		return "", err

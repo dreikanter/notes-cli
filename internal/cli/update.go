@@ -103,7 +103,10 @@ var updateCmd = &cobra.Command{
 		}
 
 		if contentChanged {
-			newContent := note.FormatNote(updated, body)
+			newContent, err := note.FormatNote(updated, body)
+			if err != nil {
+				return err
+			}
 			if err := writeAtomic(oldPath, newContent); err != nil {
 				return err
 			}

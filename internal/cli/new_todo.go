@@ -65,7 +65,10 @@ var newTodoCmd = &cobra.Command{
 
 		fullPath := filepath.Join(dir, filename)
 		body := []byte(note.FormatTodoContent(carriedTasks))
-		content := note.FormatNote(note.Frontmatter{Type: "todo"}, body)
+		content, err := note.FormatNote(note.Frontmatter{Type: "todo"}, body)
+		if err != nil {
+			return err
+		}
 
 		if err := writeAtomic(fullPath, content); err != nil {
 			return err

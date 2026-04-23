@@ -114,7 +114,10 @@ func annotateRunE(cmd *cobra.Command, args []string) error {
 	}
 
 	merged := mergeAnnotation(existing, gen)
-	newContent := note.FormatNote(merged, body)
+	newContent, err := note.FormatNote(merged, body)
+	if err != nil {
+		return err
+	}
 
 	if err := writeAtomic(fullPath, newContent); err != nil {
 		return err
