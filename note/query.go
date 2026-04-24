@@ -15,6 +15,8 @@ type query struct {
 	date       time.Time
 	beforeSet  bool
 	beforeDate time.Time
+	publicSet  bool
+	public     bool
 }
 
 // QueryOpt configures Store.All and Store.Find. Opts are combinable; multiple
@@ -64,6 +66,16 @@ func WithBeforeDate(d time.Time) QueryOpt {
 	}
 }
 
+// WithPublic matches entries whose Meta.Public equals v. A note with no
+// frontmatter "public" key reads as Public: false, so WithPublic(false)
+// matches both explicit "public: false" and missing-key notes.
+func WithPublic(v bool) QueryOpt {
+	return func(q *query) {
+		q.publicSet = true
+		q.public = v
+	}
+}
+
 // buildQuery applies opts to a fresh query value.
 func buildQuery(opts []QueryOpt) query {
 	var q query
@@ -90,6 +102,9 @@ func matches(entry Entry, q query) bool {
 		return false
 	}
 	if q.beforeSet && !beforeDay(entry.Meta.CreatedAt, q.beforeDate) {
+		return false
+	}
+	if q.publicSet && entry.Meta.Public != q.public {
 		return false
 	}
 	return true
