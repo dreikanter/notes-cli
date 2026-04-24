@@ -177,7 +177,7 @@ func (s *OSStore) Find(opts ...QueryOpt) (Entry, error) {
 		return Entry{}, err
 	}
 	if len(entries) == 0 {
-		return Entry{}, fmt.Errorf("%w", ErrNotFound)
+		return Entry{}, ErrNotFound
 	}
 	return entries[0], nil
 }
