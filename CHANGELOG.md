@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.11] - 2026-04-24
+
+### Changed
+
+- `internal/cli/new.go`: `notes new` now builds a `StoreEntry` and routes through `store.Put`. `--upsert` uses `store.Find(WithType, WithExactDate(today), WithSlug)` + conditional `store.Put`. `internal/cli/create.go` is deleted — ID generation, directory creation, and atomic write are owned by `OSStore.Put` ([#241]).
+
+[#241]: https://github.com/dreikanter/notes-cli/pull/241
+
 ## [0.3.10] - 2026-04-24
 
 ### Changed
