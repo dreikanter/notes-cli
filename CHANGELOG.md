@@ -509,52 +509,24 @@ No implementations and no behaviour changes — this PR only establishes the con
 
 - `notes read`, `notes append`, and `notes resolve` now include the effective filters in the "no notes found" error (e.g. `no notes found matching filters: type=[todo] today=true`) so you can tell which filter narrowed too far ([#115])
 - `notes new` and `notes new-todo` now inherit the notes-store root's directory permissions when creating date subdirectories, instead of hardcoding `0o755`, so a `0o700` root is no longer silently widened ([#115])
-
-### Removed
-
-- `notes read --no-frontmatter` no longer has a `-F` short form. Use the long flag ([#115])
-
-## [0.1.83] - 2026-04-20
-
-### Changed
-
 - `note.NextID` now flocks the store root directory instead of a sibling `id.json.lock` file, so no lockfile artifact is left behind after `notes new` / `notes new-todo` runs. Serialization semantics are unchanged ([#115])
 - `notes annotate --timeout 0` now disables the deadline (previously it caused the command to fail immediately), mirroring `--max-chars 0 = no limit` ([#115])
-
-## [0.1.82] - 2026-04-20
-
-### Changed
-
 - `note.NextID` now serializes the id.json read-modify-write across processes via an exclusive `flock` on a sibling `id.json.lock`, so parallel `notes new` / `notes new-todo` runs can no longer duplicate IDs ([#115])
 - `notes grep` and `notes rg` propagate the child process's exit code instead of collapsing every failure to `1`: "no match" (exit 1) is now distinguishable from real tool errors (exit 2+) by the caller ([#115])
 - `notes annotate` now runs the `claude` CLI with a context-bound timeout (default 60s, configurable via `--timeout`), so a hung Claude binary no longer hangs the command indefinitely ([#115])
-
-## [0.1.81] - 2026-04-20
-
-### Changed
-
 - `notes update --sync-filename` now reserves the target atomically with `os.Link` + `os.Remove`, closing a TOCTOU between `os.Stat` and `os.Rename` that could silently clobber a file created between the two syscalls ([#115])
 - `mustNotesPath` replaced by `notesRoot() (string, error)`: the notes-store resolution no longer calls `os.Exit(1)` from inside `RunE` handlers, so errors now flow through Cobra's normal error pipeline (and respect `SilenceUsage`). Error output and exit code are unchanged ([#115])
 - `notes annotate` error messages are more useful when the `claude` CLI fails with empty stderr: the exit code and the first 500 bytes of stdout are now included, replacing the previous opaque `exit status 1`. Successful runs and failures that write to stderr are unchanged ([#115])
 - `notes new --public` and `--private` are now mutually exclusive (matching `notes update`). Passing both returns an error instead of silently letting `--private` override `--public`; the old silent-override logic is gone ([#115])
-
-### Removed
-
-- `notes new-todo --force` flag has been removed. Its help text promised to "regenerate today's todo even if it exists," but it actually allocated a new ID and wrote a *second* todo for the same day, which was never the intended behavior. If today's todo already exists, `notes new-todo` now unconditionally returns its path ([#115])
-
-## [0.1.80] - 2026-04-20
-
-### Changed
-
 - `notes grep` no longer injects `-i`; searches are case-sensitive by default. Pass `-i` explicitly for case-insensitive search ([#115])
 - `notes rg` now only injects `--glob *.md`; the previously forced `--sortr path`, `--heading`, `--no-line-number`, and `--ignore-case` defaults are gone, so the subcommand behaves like plain `rg` restricted to Markdown files. Pass those flags explicitly if you want the old output style ([#115])
 - `ValidateSlug` now rejects anything outside `[A-Za-z0-9_-]` (previously only all-digit slugs were rejected), so slugs containing `/`, `\`, `.`, whitespace, or control characters can no longer reach `NoteFilename` and corrupt filesystem paths or the filename's dot-suffix cache ([#115])
-
-## [0.1.79] - 2026-04-20
-
-### Changed
-
 - Internal cleanups from the code-review follow-up list (no user-visible behavior change): `notes update`'s "at least one flag" guard now walks `cmd.LocalFlags()` instead of a hand-maintained flag-name slice that had to stay in sync with registrations; `ParseTask`'s regex requires exactly one marker character (`[ ]`, `[x]`, …) instead of accepting zero-or-one, so stray `[]` no longer parses as a task ([#115])
+
+### Removed
+
+- `notes read --no-frontmatter` no longer has a `-F` short form. Use the long flag ([#115])
+- `notes new-todo --force` flag has been removed. Its help text promised to "regenerate today's todo even if it exists," but it actually allocated a new ID and wrote a *second* todo for the same day, which was never the intended behavior. If today's todo already exists, `notes new-todo` now unconditionally returns its path ([#115])
 
 ## [0.1.78] - 2026-04-20
 
@@ -700,6 +672,7 @@ No implementations and no behaviour changes — this PR only establishes the con
 
 - Merge `latest` into `resolve`; `resolve` now accepts `--type`, `--slug`, `--tag` filter flags as an alternative to the positional argument ([#85])
 - Unify `Use` line to `<id|type|query>` across all ref-accepting commands ([#88])
+- Simplify `--slug` flag to single-value on `ls` and `resolve` commands ([#85])
 
 ### Removed
 
@@ -708,16 +681,6 @@ No implementations and no behaviour changes — this PR only establishes the con
 ### Fixed
 
 - Fix broken `edit` and `rm` tests after testdata rename in [#72] ([#85])
-
-## [0.1.54] - 2026-04-05
-
-### Changed
-
-- Simplify `--slug` flag to single-value on `ls` and `resolve` commands ([#85])
-
-### Fixed
-
-- Fix broken tests for `edit` and `rm` commands after testdata rename in [#72] ([#85])
 
 ## [0.1.41] - 2026-04-05
 
@@ -946,7 +909,6 @@ No implementations and no behaviour changes — this PR only establishes the con
 [0.1.58]: https://github.com/dreikanter/notes-cli/releases/tag/v0.1.58
 [0.1.57]: https://github.com/dreikanter/notes-cli/releases/tag/v0.1.57
 [0.1.55]: https://github.com/dreikanter/notes-cli/releases/tag/v0.1.55
-[0.1.54]: https://github.com/dreikanter/notes-cli/releases/tag/v0.1.54
 [0.1.41]: https://github.com/dreikanter/notes-cli/releases/tag/v0.1.41
 [0.1.40]: https://github.com/dreikanter/notes-cli/releases/tag/v0.1.40
 [0.1.39]: https://github.com/dreikanter/notes-cli/releases/tag/v0.1.39
