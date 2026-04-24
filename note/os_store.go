@@ -155,15 +155,6 @@ func refMatchesFilename(r fileRef, q query) bool {
 	return true
 }
 
-// entryMatchesTags reports whether entry satisfies the WithTag filters in q.
-// Called after readEntry so Meta.Tags has body hashtags merged in.
-func entryMatchesTags(entry Entry, q query) bool {
-	if len(q.tags) == 0 {
-		return true
-	}
-	return hasAllTags(entry.Meta.Tags, q.tags)
-}
-
 // All returns every entry matching opts, newest-first. Type/slug/date filters
 // are evaluated from filenames; tag filters require reading file bodies.
 func (s *OSStore) All(opts ...QueryOpt) ([]Entry, error) {
@@ -206,7 +197,7 @@ func (s *OSStore) collect(opts []QueryOpt, firstOnly bool) ([]Entry, error) {
 			if err != nil {
 				return nil, err
 			}
-			if entryMatchesTags(entry, q) {
+			if matches(entry, q) {
 				return []Entry{entry}, nil
 			}
 		}
@@ -220,7 +211,7 @@ func (s *OSStore) collect(opts []QueryOpt, firstOnly bool) ([]Entry, error) {
 
 	out := entries[:0]
 	for _, e := range entries {
-		if entryMatchesTags(e, q) {
+		if matches(e, q) {
 			out = append(out, e)
 		}
 	}

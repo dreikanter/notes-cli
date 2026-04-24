@@ -295,3 +295,45 @@ func TestOSStore_RoundTripPreservesFrontmatterAndTags(t *testing.T) {
 		t.Fatalf("round-trip Tags missing: %v (got %v)", want, got.Meta.Tags)
 	}
 }
+
+func TestOSStore_AllFilterByPublic(t *testing.T) {
+	s := newOSTestStore(t)
+
+	base := time.Date(2026, 1, 1, 12, 0, 0, 0, time.UTC)
+	_, err := s.Put(Entry{Meta: Meta{Title: "pub", Public: true, CreatedAt: base}, Body: "p\n"})
+	if err != nil {
+		t.Fatalf("Put pub: %v", err)
+	}
+	_, err = s.Put(Entry{Meta: Meta{Title: "priv-explicit", Public: false, CreatedAt: base.Add(24 * time.Hour)}, Body: "x\n"})
+	if err != nil {
+		t.Fatalf("Put priv-explicit: %v", err)
+	}
+	_, err = s.Put(Entry{Meta: Meta{Title: "pub2", Public: true, CreatedAt: base.Add(48 * time.Hour)}, Body: "y\n"})
+	if err != nil {
+		t.Fatalf("Put pub2: %v", err)
+	}
+
+	pub, err := s.All(WithPublic(true))
+	if err != nil {
+		t.Fatalf("All WithPublic(true): %v", err)
+	}
+	if len(pub) != 2 {
+		t.Fatalf("WithPublic(true) len = %d, want 2 (got IDs %v)", len(pub), entryIDs(pub))
+	}
+	for _, e := range pub {
+		if !e.Meta.Public {
+			t.Fatalf("WithPublic(true) returned Public=false entry %d", e.ID)
+		}
+	}
+
+	priv, err := s.All(WithPublic(false))
+	if err != nil {
+		t.Fatalf("All WithPublic(false): %v", err)
+	}
+	if len(priv) != 1 {
+		t.Fatalf("WithPublic(false) len = %d, want 1 (got IDs %v)", len(priv), entryIDs(priv))
+	}
+	if priv[0].Meta.Public {
+		t.Fatalf("WithPublic(false) returned Public=true entry %d", priv[0].ID)
+	}
+}
