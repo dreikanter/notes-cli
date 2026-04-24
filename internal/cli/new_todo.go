@@ -1,9 +1,8 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -13,91 +12,51 @@ import (
 
 var newTodoCmd = &cobra.Command{
 	Use:   "new-todo",
-	Short: "Create today's todo",
+	Short: "Create today's todo, carrying over incomplete tasks from the previous todo",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		root, err := notesRoot()
+		store, err := notesStore()
 		if err != nil {
 			return err
 		}
-		today := time.Now().Format(note.DateFormat)
+		today := time.Now()
 
-		idx, err := note.Load(root, note.WithFrontmatter(false), note.WithLogger(stderrLogger(cmd)))
-		if err != nil {
-			return err
-		}
-		entries := idx.Entries()
-
-		if existing := findTodayTodo(entries, today); existing != nil {
-			fmt.Fprintln(cmd.OutOrStdout(), filepath.Join(root, existing.RelPath))
+		if existing, err := store.Find(note.WithType("todo"), note.WithExactDate(today)); err == nil {
+			fmt.Fprintln(cmd.OutOrStdout(), store.AbsPath(existing))
 			return nil
+		} else if !errors.Is(err, note.ErrNotFound) {
+			return err
 		}
 
-		// Find the most recent previous todo and roll over tasks
 		var carriedTasks []note.Task
-		prev := findLatestTodo(entries, today)
-		if prev != nil {
-			prevPath := filepath.Join(root, prev.RelPath)
-			prevData, err := os.ReadFile(prevPath)
-			if err != nil {
-				return fmt.Errorf("cannot read previous todo: %w", err)
-			}
-			prevLines := strings.Split(string(prevData), "\n")
-
+		prev, err := store.Find(note.WithType("todo"), note.WithBeforeDate(today))
+		switch {
+		case err == nil:
+			prevLines := strings.Split(prev.Body, "\n")
 			result := note.RolloverTasks(prevLines)
 			carriedTasks = result.CarriedTasks
 
-			if err := note.WriteAtomic(prevPath, []byte(strings.Join(result.UpdatedLines, "\n"))); err != nil {
+			prev.Body = strings.Join(result.UpdatedLines, "\n")
+			if _, err := store.Put(prev); err != nil {
 				return fmt.Errorf("cannot update previous todo: %w", err)
 			}
+		case errors.Is(err, note.ErrNotFound):
+			// no previous todo; carriedTasks stays empty
+		default:
+			return err
 		}
 
-		// Allocate new ID and create new todo
-		id, err := note.NextID(root)
+		saved, err := store.Put(note.StoreEntry{
+			Meta: note.StoreMeta{Type: "todo", CreatedAt: today},
+			Body: note.FormatTodoContent(carriedTasks),
+		})
 		if err != nil {
 			return err
 		}
 
-		filename := note.Filename(today, id, "", "todo")
-		dir := note.DirPath(root, today)
-		if err := os.MkdirAll(dir, note.StoreDirMode(root)); err != nil {
-			return fmt.Errorf("cannot create directory %s: %w", dir, err)
-		}
-
-		fullPath := filepath.Join(dir, filename)
-		body := []byte(note.FormatTodoContent(carriedTasks))
-		content, err := note.FormatNote(note.Frontmatter{Type: "todo"}, body)
-		if err != nil {
-			return err
-		}
-
-		if err := note.WriteAtomic(fullPath, content); err != nil {
-			return err
-		}
-
-		fmt.Fprintln(cmd.OutOrStdout(), fullPath)
+		fmt.Fprintln(cmd.OutOrStdout(), store.AbsPath(saved))
 		return nil
 	},
-}
-
-// findLatestTodo finds the most recent todo entry strictly before the given date.
-func findLatestTodo(entries []note.Entry, beforeDate string) *note.Entry {
-	for i := range entries {
-		if entries[i].Type == "todo" && entries[i].Date < beforeDate {
-			return &entries[i]
-		}
-	}
-	return nil
-}
-
-// findTodayTodo finds a todo entry matching today's date.
-func findTodayTodo(entries []note.Entry, today string) *note.Entry {
-	for i := range entries {
-		if entries[i].Type == "todo" && entries[i].Date == today {
-			return &entries[i]
-		}
-	}
-	return nil
 }
 
 func init() {

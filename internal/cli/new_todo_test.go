@@ -57,13 +57,11 @@ func TestNewTodoCreatesFromPrevious(t *testing.T) {
 func TestNewTodoReturnsExistingToday(t *testing.T) {
 	root := copyTestdata(t)
 
-	// First call creates today's todo.
 	first, err := runNewTodo(t, root)
 	if err != nil {
 		t.Fatalf("first call unexpected error: %v", err)
 	}
 
-	// Second call should return the same path.
 	second, err := runNewTodo(t, root)
 	if err != nil {
 		t.Fatalf("second call unexpected error: %v", err)
@@ -111,49 +109,42 @@ func TestNewTodoWritesTypeFrontmatter(t *testing.T) {
 	}
 }
 
-func TestFindLatestTodo(t *testing.T) {
-	entries := []note.Entry{
-		{Ref: note.Ref{Date: "20260312", Type: "todo", RelPath: "2026/03/20260312_100.todo.md"}},
-		{Ref: note.Ref{Date: "20260311", Type: "todo", RelPath: "2026/03/20260311_99.todo.md"}},
-		{Ref: note.Ref{Date: "20260310", Type: "", RelPath: "2026/03/20260310_98.md"}},
-		{Ref: note.Ref{Date: "20260309", Type: "todo", RelPath: "2026/03/20260309_97.todo.md"}},
+func TestNewTodoRollsOverIncompleteTasks(t *testing.T) {
+	root := emptyNotesRoot(t)
+
+	// Seed a previous todo dated one day ago with a pending and a done task.
+	prev := time.Now().AddDate(0, 0, -1)
+	dir := filepath.Join(root, prev.Format("2006"), prev.Format("01"))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	prevPath := filepath.Join(dir, prev.Format("20060102")+"_9001.todo.md")
+	prevBody := "---\ntype: todo\n---\n\n- [ ] pending task\n\n- [x] finished task\n"
+	if err := os.WriteFile(prevPath, []byte(prevBody), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Keep id.json in sync with the seeded ID so NextID doesn't collide.
+	idData, _ := json.Marshal(map[string]int{"last_id": 9001})
+	if err := os.WriteFile(filepath.Join(root, "id.json"), idData, 0o644); err != nil {
+		t.Fatal(err)
 	}
 
-	got := findLatestTodo(entries, "20260312")
-	if got == nil {
-		t.Fatal("expected to find a todo")
-	}
-	if got.Date != "20260311" {
-		t.Errorf("got date %s, want 20260311", got.Date)
-	}
-}
-
-func TestFindLatestTodoNone(t *testing.T) {
-	entries := []note.Entry{
-		{Ref: note.Ref{Date: "20260312", Type: "todo"}},
-	}
-	got := findLatestTodo(entries, "20260312")
-	if got != nil {
-		t.Error("expected nil when no previous todo exists")
-	}
-}
-
-func TestFindTodayTodo(t *testing.T) {
-	entries := []note.Entry{
-		{Ref: note.Ref{Date: "20260312", Type: "todo", RelPath: "2026/03/20260312_100.todo.md"}},
-		{Ref: note.Ref{Date: "20260311", Type: "todo", RelPath: "2026/03/20260311_99.todo.md"}},
+	out, err := runNewTodo(t, root)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 
-	got := findTodayTodo(entries, "20260312")
-	if got == nil {
-		t.Fatal("expected to find today's todo")
+	newData, _ := os.ReadFile(out)
+	newContent := string(newData)
+	if !strings.Contains(newContent, "pending task") {
+		t.Errorf("expected pending task carried over, got:\n%s", newContent)
 	}
-	if got.Date != "20260312" {
-		t.Errorf("got date %s, want 20260312", got.Date)
+	if strings.Contains(newContent, "finished task") {
+		t.Errorf("completed task should not be carried over, got:\n%s", newContent)
 	}
 
-	got = findTodayTodo(entries, "20260313")
-	if got != nil {
-		t.Error("expected nil for future date")
+	prevData, _ := os.ReadFile(prevPath)
+	if !strings.Contains(string(prevData), "(moved)") {
+		t.Errorf("previous todo should have (moved) markers on its pending tasks, got:\n%s", string(prevData))
 	}
 }
