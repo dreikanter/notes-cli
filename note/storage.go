@@ -43,9 +43,10 @@ type Store interface {
 	Get(id int) (Entry, error)
 
 	// Put writes entry. When entry.ID is zero the store assigns a fresh ID
-	// and sets Meta.CreatedAt to time.Now if zero; otherwise Put performs a
-	// full replace of the existing entry. Meta.UpdatedAt is always set to
-	// time.Now on write. Returns the stored entry with all store-assigned
+	// and defaults Meta.CreatedAt to time.Now if zero; otherwise Put performs
+	// a full replace of the existing entry and requires Meta.CreatedAt to be
+	// non-zero (returning an error otherwise). Meta.UpdatedAt is always set
+	// to time.Now on write. Returns the stored entry with all store-assigned
 	// fields populated.
 	Put(entry Entry) (Entry, error)
 
@@ -114,4 +115,56 @@ func WithBeforeDate(d time.Time) QueryOpt {
 		q.beforeSet = true
 		q.beforeDate = d
 	}
+}
+
+// buildQuery applies opts to a fresh query value.
+func buildQuery(opts []QueryOpt) query {
+	var q query
+	for _, opt := range opts {
+		opt(&q)
+	}
+	return q
+}
+
+// matches reports whether entry satisfies every filter in q. Tag comparison
+// is case-insensitive; date comparisons are at day precision in the filter's
+// location.
+func matches(entry Entry, q query) bool {
+	if q.typeSet && entry.Meta.Type != q.noteType {
+		return false
+	}
+	if q.slugSet && entry.Meta.Slug != q.slug {
+		return false
+	}
+	if len(q.tags) > 0 && !hasAllTags(entry.Meta.Tags, q.tags) {
+		return false
+	}
+	if q.dateSet && !sameDay(entry.Meta.CreatedAt, q.date) {
+		return false
+	}
+	if q.beforeSet && !beforeDay(entry.Meta.CreatedAt, q.beforeDate) {
+		return false
+	}
+	return true
+}
+
+// sameDay reports whether a and b fall on the same calendar day, using b's
+// location for the comparison.
+func sameDay(a, b time.Time) bool {
+	ay, am, ad := a.In(b.Location()).Date()
+	by, bm, bd := b.Date()
+	return ay == by && am == bm && ad == bd
+}
+
+// beforeDay reports whether a's calendar day is strictly earlier than b's,
+// using b's location.
+func beforeDay(a, b time.Time) bool {
+	aDay := startOfDay(a.In(b.Location()))
+	bDay := startOfDay(b)
+	return aDay.Before(bDay)
+}
+
+func startOfDay(t time.Time) time.Time {
+	y, m, d := t.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
 }

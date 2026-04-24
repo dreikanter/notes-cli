@@ -84,19 +84,22 @@ func (s *MemStore) Get(id int) (Entry, error) {
 }
 
 // Put stores entry. When entry.ID is zero a new ID is assigned as
-// max(existing IDs) + 1 (1 for an empty store); otherwise the existing
-// entry is replaced. Meta.CreatedAt is set to time.Now when zero, and
-// Meta.UpdatedAt is always set to time.Now.
+// max(existing IDs) + 1 (1 for an empty store) and Meta.CreatedAt is
+// defaulted to time.Now if zero. Updates (entry.ID != 0) must carry a
+// non-zero Meta.CreatedAt. Meta.UpdatedAt is always set to time.Now.
 func (s *MemStore) Put(entry Entry) (Entry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	now := time.Now()
 	if entry.ID == 0 {
 		entry.ID = s.nextIDLocked()
+		if entry.Meta.CreatedAt.IsZero() {
+			entry.Meta.CreatedAt = now
+		}
 	}
-	now := time.Now()
 	if entry.Meta.CreatedAt.IsZero() {
-		entry.Meta.CreatedAt = now
+		return Entry{}, fmt.Errorf("note %d: CreatedAt is zero", entry.ID)
 	}
 	entry.Meta.UpdatedAt = now
 	s.entries[entry.ID] = entry
@@ -130,13 +133,13 @@ func (s *MemStore) matchLocked(q query) []Entry {
 // nextIDLocked returns max(existing IDs) + 1, or 1 when empty. Caller holds
 // s.mu for write.
 func (s *MemStore) nextIDLocked() int {
-	max := 0
+	highest := 0
 	for id := range s.entries {
-		if id > max {
-			max = id
+		if id > highest {
+			highest = id
 		}
 	}
-	return max + 1
+	return highest + 1
 }
 
 // sortIDsLocked sorts ids newest-first by the entries' CreatedAt, tie-breaking
@@ -160,56 +163,4 @@ func (s *MemStore) sortEntriesByRecency(entries []Entry) {
 		}
 		return entries[i].ID > entries[j].ID
 	})
-}
-
-// buildQuery applies opts to a fresh query value.
-func buildQuery(opts []QueryOpt) query {
-	var q query
-	for _, opt := range opts {
-		opt(&q)
-	}
-	return q
-}
-
-// matches reports whether entry satisfies every filter in q. Tag comparison
-// is case-insensitive; date comparisons are at day precision in the filter's
-// location.
-func matches(entry Entry, q query) bool {
-	if q.typeSet && entry.Meta.Type != q.noteType {
-		return false
-	}
-	if q.slugSet && entry.Meta.Slug != q.slug {
-		return false
-	}
-	if len(q.tags) > 0 && !hasAllTags(entry.Meta.Tags, q.tags) {
-		return false
-	}
-	if q.dateSet && !sameDay(entry.Meta.CreatedAt, q.date) {
-		return false
-	}
-	if q.beforeSet && !beforeDay(entry.Meta.CreatedAt, q.beforeDate) {
-		return false
-	}
-	return true
-}
-
-// sameDay reports whether a and b fall on the same calendar day, using b's
-// location for the comparison.
-func sameDay(a, b time.Time) bool {
-	ay, am, ad := a.In(b.Location()).Date()
-	by, bm, bd := b.Date()
-	return ay == by && am == bm && ad == bd
-}
-
-// beforeDay reports whether a's calendar day is strictly earlier than b's,
-// using b's location.
-func beforeDay(a, b time.Time) bool {
-	aDay := startOfDay(a.In(b.Location()))
-	bDay := startOfDay(b)
-	return aDay.Before(bDay)
-}
-
-func startOfDay(t time.Time) time.Time {
-	y, m, d := t.Date()
-	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
 }
