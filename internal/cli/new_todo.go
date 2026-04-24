@@ -46,8 +46,8 @@ var newTodoCmd = &cobra.Command{
 			return err
 		}
 
-		saved, err := store.Put(note.StoreEntry{
-			Meta: note.StoreMeta{Type: "todo", CreatedAt: today},
+		saved, err := store.Put(note.Entry{
+			Meta: note.Meta{Type: "todo", CreatedAt: today},
 			Body: note.FormatTodoContent(carriedTasks),
 		})
 		if err != nil {

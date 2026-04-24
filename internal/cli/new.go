@@ -51,8 +51,8 @@ var newCmd = &cobra.Command{
 			return err
 		}
 
-		entry := note.StoreEntry{
-			Meta: note.StoreMeta{
+		entry := note.Entry{
+			Meta: note.Meta{
 				Title:       title,
 				Slug:        slug,
 				Type:        noteType,
@@ -91,7 +91,7 @@ func stdinIsTerminal(in io.Reader) bool {
 // findUpsertEntry looks for today's note matching noteType and slug.
 // Returns (entry, true, nil) on hit, (zero, false, nil) on clean miss, and
 // a non-nil error only for I/O failures.
-func findUpsertEntry(store note.Store, noteType, slug string) (note.StoreEntry, bool, error) {
+func findUpsertEntry(store note.Store, noteType, slug string) (note.Entry, bool, error) {
 	opts := []note.QueryOpt{note.WithExactDate(time.Now())}
 	if noteType != "" {
 		opts = append(opts, note.WithType(noteType))
@@ -102,9 +102,9 @@ func findUpsertEntry(store note.Store, noteType, slug string) (note.StoreEntry, 
 	entry, err := store.Find(opts...)
 	if err != nil {
 		if errors.Is(err, note.ErrNotFound) {
-			return note.StoreEntry{}, false, nil
+			return note.Entry{}, false, nil
 		}
-		return note.StoreEntry{}, false, err
+		return note.Entry{}, false, err
 	}
 	return entry, true, nil
 }

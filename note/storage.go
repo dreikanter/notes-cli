@@ -1,6 +1,16 @@
 package note
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+// ErrNotFound is the package-wide "entry not found" sentinel. It is returned
+// (wrapped) by Store.Get, Store.Find, and Store.Delete when no entry matches.
+// Callers match with errors.Is:
+//
+//	if errors.Is(err, note.ErrNotFound) { … }
+var ErrNotFound = errors.New("entry not found")
 
 // Store is the backend abstraction the note package exposes. Implementations
 // encapsulate the storage substrate (filesystem, in-memory, future cloud/DB)
@@ -21,23 +31,23 @@ type Store interface {
 	// Returned entries are fully populated, including Meta.Tags merged from
 	// frontmatter tags and body hashtags. Zero matches returns an empty
 	// slice with a nil error.
-	All(opts ...QueryOpt) ([]StoreEntry, error)
+	All(opts ...QueryOpt) ([]Entry, error)
 
 	// Find returns the newest entry matching opts. Returns ErrNotFound when
 	// no entry matches. Backends may terminate the scan after the first
 	// match.
-	Find(opts ...QueryOpt) (StoreEntry, error)
+	Find(opts ...QueryOpt) (Entry, error)
 
 	// Get returns the entry with the given ID, or ErrNotFound if no entry
 	// has that ID.
-	Get(id int) (StoreEntry, error)
+	Get(id int) (Entry, error)
 
 	// Put writes entry. When entry.ID is zero the store assigns a fresh ID
 	// and sets Meta.CreatedAt to time.Now if zero; otherwise Put performs a
 	// full replace of the existing entry. Meta.UpdatedAt is always set to
 	// time.Now on write. Returns the stored entry with all store-assigned
 	// fields populated.
-	Put(entry StoreEntry) (StoreEntry, error)
+	Put(entry Entry) (Entry, error)
 
 	// Delete removes the entry with the given ID. Returns ErrNotFound when
 	// no entry has that ID.

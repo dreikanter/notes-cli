@@ -32,17 +32,17 @@ func HasSpecialBehavior(s string) bool {
 	return false
 }
 
-// Ref is a filename-derived reference to a single note file in the store: the
-// fields Ref carries are exactly what ParseFilename can recover from the base
+// ref is a filename-derived reference to a single note file in the store: the
+// fields ref carries are exactly what ParseFilename can recover from the base
 // name plus the walker's RelPath. It is the lightweight half of the two-tier
-// model — pair with Frontmatter and stat metadata to get a fully-hydrated
+// model — pair with frontmatter and stat metadata to get a fully-hydrated
 // Entry.
-type Ref struct {
+type ref struct {
 	RelPath string // relative path from store root, e.g. "2026/01/20260106_8823.md"
 	Date    string // date as Y...YMMDD, e.g. "20260106"
 	ID      string // "8823"
 	Slug    string // descriptive slug, e.g. "api-redesign", or ""
-	Type    string // type reported by the filename dot-suffix; any string accepted. Frontmatter type is canonical when available.
+	Type    string // type reported by the filename dot-suffix; any string accepted. frontmatter type is canonical when available.
 }
 
 // filenameRoundtripSafeType reports whether a note type can round-trip through
@@ -56,8 +56,8 @@ func filenameRoundtripSafeType(noteType string) bool {
 // ParseFilename parses a note base filename (without .md extension) into its components.
 // Expected format: Y...YMMDD_ID[_slug][.TYPE], where MM and DD are zero-padded.
 // The dot-suffix is extracted as the filename-reported Type only when it round-
-// trips cleanly (see filenameRoundtripSafeType). Frontmatter `type` is canonical.
-func ParseFilename(baseName string) (Ref, error) {
+// trips cleanly (see filenameRoundtripSafeType). frontmatter `type` is canonical.
+func ParseFilename(baseName string) (ref, error) {
 	noteType := ""
 	remaining := baseName
 
@@ -75,17 +75,17 @@ func ParseFilename(baseName string) (Ref, error) {
 
 	parts := strings.SplitN(remaining, "_", 3)
 	if len(parts) < 2 {
-		return Ref{}, fmt.Errorf("invalid note filename: %s", baseName)
+		return ref{}, fmt.Errorf("invalid note filename: %s", baseName)
 	}
 
 	date := parts[0]
 	if len(date) < 5 || !IsDigits(date) {
-		return Ref{}, fmt.Errorf("invalid date in filename: %s", baseName)
+		return ref{}, fmt.Errorf("invalid date in filename: %s", baseName)
 	}
 
 	id := parts[1]
 	if !IsDigits(id) {
-		return Ref{}, fmt.Errorf("invalid id in filename: %s", baseName)
+		return ref{}, fmt.Errorf("invalid id in filename: %s", baseName)
 	}
 
 	slug := ""
@@ -93,7 +93,7 @@ func ParseFilename(baseName string) (Ref, error) {
 		slug = parts[2]
 	}
 
-	return Ref{
+	return ref{
 		Date: date,
 		ID:   id,
 		Slug: slug,

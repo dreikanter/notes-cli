@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func mustFormatNote(t *testing.T, f Frontmatter, body []byte) []byte {
+func mustFormatNote(t *testing.T, f frontmatter, body []byte) []byte {
 	t.Helper()
 	out, err := FormatNote(f, body)
 	if err != nil {
@@ -21,19 +21,19 @@ func mustFormatNote(t *testing.T, f Frontmatter, body []byte) []byte {
 func TestFrontmatterIsZero(t *testing.T) {
 	tests := []struct {
 		name string
-		f    Frontmatter
+		f    frontmatter
 		want bool
 	}{
-		{"empty", Frontmatter{}, true},
-		{"title set", Frontmatter{Title: "T"}, false},
-		{"slug set", Frontmatter{Slug: "s"}, false},
-		{"tags empty slice is zero", Frontmatter{Tags: []string{}}, true},
-		{"tags with value", Frontmatter{Tags: []string{"a"}}, false},
-		{"aliases empty slice is zero", Frontmatter{Aliases: []string{}}, true},
-		{"aliases with value", Frontmatter{Aliases: []string{"a"}}, false},
-		{"description set", Frontmatter{Description: "d"}, false},
-		{"public true", Frontmatter{Public: true}, false},
-		{"date set", Frontmatter{Date: time.Date(2026, 4, 22, 0, 0, 0, 0, time.UTC)}, false},
+		{"empty", frontmatter{}, true},
+		{"title set", frontmatter{Title: "T"}, false},
+		{"slug set", frontmatter{Slug: "s"}, false},
+		{"tags empty slice is zero", frontmatter{Tags: []string{}}, true},
+		{"tags with value", frontmatter{Tags: []string{"a"}}, false},
+		{"aliases empty slice is zero", frontmatter{Aliases: []string{}}, true},
+		{"aliases with value", frontmatter{Aliases: []string{"a"}}, false},
+		{"description set", frontmatter{Description: "d"}, false},
+		{"public true", frontmatter{Public: true}, false},
+		{"date set", frontmatter{Date: time.Date(2026, 4, 22, 0, 0, 0, 0, time.UTC)}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -48,27 +48,27 @@ func TestParseNoteSuccess(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
-		want  Frontmatter
+		want  frontmatter
 		body  string
 	}{
-		{"empty input", "", Frontmatter{}, ""},
-		{"no frontmatter", "# Hello\n\nBody text.\n", Frontmatter{}, "# Hello\n\nBody text.\n"},
-		{"title only", "---\ntitle: My Note\n---\n\n# Content\n", Frontmatter{Title: "My Note"}, "# Content\n"},
-		{"slug only", "---\nslug: my-slug\n---\n\n# Content\n", Frontmatter{Slug: "my-slug"}, "# Content\n"},
-		{"tags only", "---\ntags: [work, planning]\n---\n\n# Content\n", Frontmatter{Tags: []string{"work", "planning"}}, "# Content\n"},
-		{"description only", "---\ndescription: Quick thought\n---\n\n# Content\n", Frontmatter{Description: "Quick thought"}, "# Content\n"},
-		{"public true", "---\npublic: true\n---\n\n# Content\n", Frontmatter{Public: true}, "# Content\n"},
-		{"public absent false", "---\ntitle: T\n---\n\n# Content\n", Frontmatter{Title: "T"}, "# Content\n"},
+		{"empty input", "", frontmatter{}, ""},
+		{"no frontmatter", "# Hello\n\nBody text.\n", frontmatter{}, "# Hello\n\nBody text.\n"},
+		{"title only", "---\ntitle: My Note\n---\n\n# Content\n", frontmatter{Title: "My Note"}, "# Content\n"},
+		{"slug only", "---\nslug: my-slug\n---\n\n# Content\n", frontmatter{Slug: "my-slug"}, "# Content\n"},
+		{"tags only", "---\ntags: [work, planning]\n---\n\n# Content\n", frontmatter{Tags: []string{"work", "planning"}}, "# Content\n"},
+		{"description only", "---\ndescription: Quick thought\n---\n\n# Content\n", frontmatter{Description: "Quick thought"}, "# Content\n"},
+		{"public true", "---\npublic: true\n---\n\n# Content\n", frontmatter{Public: true}, "# Content\n"},
+		{"public absent false", "---\ntitle: T\n---\n\n# Content\n", frontmatter{Title: "T"}, "# Content\n"},
 		{
 			name:  "all fields",
 			input: "---\ntitle: T\nslug: s\ntags: [a]\ndescription: D\npublic: true\n---\n\n# Content\n",
-			want:  Frontmatter{Title: "T", Slug: "s", Tags: []string{"a"}, Description: "D", Public: true},
+			want:  frontmatter{Title: "T", Slug: "s", Tags: []string{"a"}, Description: "D", Public: true},
 			body:  "# Content\n",
 		},
-		{"unclosed frontmatter treated as no frontmatter", "---\ntitle: Oops\n# Content\n", Frontmatter{}, "---\ntitle: Oops\n# Content\n"},
-		{"int coerced to string", "---\ntitle: 12345\n---\n", Frontmatter{Title: "12345"}, ""},
-		{"null leaves field empty", "---\ntitle: null\nslug: s\n---\n", Frontmatter{Slug: "s"}, ""},
-		{"empty frontmatter block", "---\n---\n\nBody\n", Frontmatter{}, "Body\n"},
+		{"unclosed frontmatter treated as no frontmatter", "---\ntitle: Oops\n# Content\n", frontmatter{}, "---\ntitle: Oops\n# Content\n"},
+		{"int coerced to string", "---\ntitle: 12345\n---\n", frontmatter{Title: "12345"}, ""},
+		{"null leaves field empty", "---\ntitle: null\nslug: s\n---\n", frontmatter{Slug: "s"}, ""},
+		{"empty frontmatter block", "---\n---\n\nBody\n", frontmatter{}, "Body\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -115,7 +115,7 @@ func TestParseNoteErrors(t *testing.T) {
 				t.Fatalf("expected error, got f=%+v", f)
 			}
 			if !f.IsZero() {
-				t.Errorf("expected zero Frontmatter on error, got %+v", f)
+				t.Errorf("expected zero frontmatter on error, got %+v", f)
 			}
 		})
 	}
@@ -149,7 +149,7 @@ func TestParseNoteBodyIsSliceOfInput(t *testing.T) {
 }
 
 func TestFormatNoteSnapshotAllFields(t *testing.T) {
-	f := Frontmatter{
+	f := frontmatter{
 		Title:       "T",
 		Slug:        "s",
 		Tags:        []string{"a"},
@@ -164,13 +164,13 @@ func TestFormatNoteSnapshotAllFields(t *testing.T) {
 }
 
 func TestFormatNoteEmptyFrontmatter(t *testing.T) {
-	if got := string(mustFormatNote(t, Frontmatter{}, []byte("body\n"))); got != "body\n" {
+	if got := string(mustFormatNote(t, frontmatter{}, []byte("body\n"))); got != "body\n" {
 		t.Errorf("got %q, want %q", got, "body\n")
 	}
 }
 
 func TestRoundtrip(t *testing.T) {
-	cases := []Frontmatter{
+	cases := []frontmatter{
 		{},
 		{Title: "T"},
 		{Tags: []string{"a", "b"}},
@@ -218,7 +218,7 @@ func TestStripFrontmatter(t *testing.T) {
 		{"multiple closing delimiters", "---\na\n---\nb\n---\n\nBody\n", "b\n---\n\nBody\n"},
 		{
 			name:  "roundtrip with FormatNote",
-			input: string(mustFormatNote(t, Frontmatter{Tags: []string{"journal"}, Description: "A note"}, []byte("# Content\n"))),
+			input: string(mustFormatNote(t, frontmatter{Tags: []string{"journal"}, Description: "A note"}, []byte("# Content\n"))),
 			want:  "# Content\n",
 		},
 	}
@@ -253,7 +253,7 @@ func TestParseNoteCRLFInteriorPreserved(t *testing.T) {
 }
 
 func TestFormatNoteWritesLFOnly(t *testing.T) {
-	out := mustFormatNote(t, Frontmatter{Title: "T"}, []byte("hello\r\nworld\r\n"))
+	out := mustFormatNote(t, frontmatter{Title: "T"}, []byte("hello\r\nworld\r\n"))
 	wantPrefix := "---\ntitle: T\n---\n\n"
 	if string(out[:len(wantPrefix)]) != wantPrefix {
 		t.Errorf("delimiter lines not LF-only: %q", string(out[:len(wantPrefix)]))
@@ -306,7 +306,7 @@ func TestFormatNoteExtraPreservedInAlphaOrder(t *testing.T) {
 }
 
 func TestFormatNoteEmptyFrontmatterWithExtraOnly(t *testing.T) {
-	fm := Frontmatter{Extra: map[string]yaml.Node{
+	fm := frontmatter{Extra: map[string]yaml.Node{
 		"featured": {Kind: yaml.ScalarNode, Value: "true", Tag: "!!bool"},
 	}}
 	want := "---\nfeatured: true\n---\n\nbody\n"
@@ -317,14 +317,14 @@ func TestFormatNoteEmptyFrontmatterWithExtraOnly(t *testing.T) {
 }
 
 func TestIsZeroIncludesExtra(t *testing.T) {
-	if (Frontmatter{}).IsZero() == false {
-		t.Error("empty Frontmatter should be zero")
+	if (frontmatter{}).IsZero() == false {
+		t.Error("empty frontmatter should be zero")
 	}
-	fm := Frontmatter{Extra: map[string]yaml.Node{
+	fm := frontmatter{Extra: map[string]yaml.Node{
 		"featured": {Kind: yaml.ScalarNode, Value: "true", Tag: "!!bool"},
 	}}
 	if fm.IsZero() {
-		t.Error("Frontmatter with Extra should not be zero")
+		t.Error("frontmatter with Extra should not be zero")
 	}
 }
 
@@ -345,7 +345,7 @@ func TestTypeRoundTrips(t *testing.T) {
 }
 
 func TestTypeFieldOrder(t *testing.T) {
-	fm := Frontmatter{
+	fm := frontmatter{
 		Title: "T", Slug: "s", Type: "meeting",
 		Tags: []string{"a"}, Description: "D", Public: true,
 	}
@@ -394,7 +394,7 @@ func TestDateRoundTripRFC3339(t *testing.T) {
 }
 
 func TestDateFieldOrder(t *testing.T) {
-	fm := Frontmatter{
+	fm := frontmatter{
 		Title: "T", Slug: "s", Type: "meeting",
 		Date: time.Date(2026, 4, 22, 0, 0, 0, 0, time.UTC),
 		Tags: []string{"a"}, Description: "D", Public: true,
@@ -454,7 +454,7 @@ func TestAliasesRoundTrip(t *testing.T) {
 }
 
 func TestAliasesFieldOrder(t *testing.T) {
-	fm := Frontmatter{
+	fm := frontmatter{
 		Title: "T", Slug: "s", Type: "meeting",
 		Date:        time.Date(2026, 4, 22, 0, 0, 0, 0, time.UTC),
 		Tags:        []string{"a"},
@@ -498,7 +498,7 @@ func TestAliasesInvalidRejected(t *testing.T) {
 }
 
 func TestRoundtripWithAliases(t *testing.T) {
-	cases := []Frontmatter{
+	cases := []frontmatter{
 		{Aliases: []string{"a"}},
 		{Title: "T", Aliases: []string{"old-slug", "prior"}},
 		{Title: "T", Slug: "new", Aliases: []string{"old"}, Tags: []string{"x"}},
@@ -522,7 +522,7 @@ func TestRoundtripWithAliases(t *testing.T) {
 }
 
 func TestRoundtripWithDate(t *testing.T) {
-	cases := []Frontmatter{
+	cases := []frontmatter{
 		{Date: time.Date(2026, 4, 22, 0, 0, 0, 0, time.UTC)},
 		{Title: "T", Date: time.Date(2026, 4, 22, 15, 30, 0, 0, time.UTC)},
 		{Title: "T", Slug: "s", Date: time.Date(2025, 12, 31, 0, 0, 0, 0, time.UTC), Tags: []string{"a"}},

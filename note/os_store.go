@@ -160,7 +160,7 @@ func refMatchesFilename(r fileRef, q query) bool {
 
 // entryMatchesTags reports whether entry satisfies the WithTag filters in q.
 // Called after readEntry so Meta.Tags has body hashtags merged in.
-func entryMatchesTags(entry StoreEntry, q query) bool {
+func entryMatchesTags(entry Entry, q query) bool {
 	if len(q.tags) == 0 {
 		return true
 	}
@@ -169,18 +169,18 @@ func entryMatchesTags(entry StoreEntry, q query) bool {
 
 // All returns every entry matching opts, newest-first. Type/slug/date filters
 // are evaluated from filenames; tag filters require reading file bodies.
-func (s *OSStore) All(opts ...QueryOpt) ([]StoreEntry, error) {
+func (s *OSStore) All(opts ...QueryOpt) ([]Entry, error) {
 	return s.collect(opts, false)
 }
 
 // Find returns the newest entry matching opts, or ErrNotFound.
-func (s *OSStore) Find(opts ...QueryOpt) (StoreEntry, error) {
+func (s *OSStore) Find(opts ...QueryOpt) (Entry, error) {
 	entries, err := s.collect(opts, true)
 	if err != nil {
-		return StoreEntry{}, err
+		return Entry{}, err
 	}
 	if len(entries) == 0 {
-		return StoreEntry{}, fmt.Errorf("%w", ErrNotFound)
+		return Entry{}, fmt.Errorf("%w", ErrNotFound)
 	}
 	return entries[0], nil
 }
@@ -188,7 +188,7 @@ func (s *OSStore) Find(opts ...QueryOpt) (StoreEntry, error) {
 // collect is the shared read path for All and Find. When firstOnly is true
 // it stops at the first body-matched entry; refs are already sorted newest-
 // first so the first match is also the newest.
-func (s *OSStore) collect(opts []QueryOpt, firstOnly bool) ([]StoreEntry, error) {
+func (s *OSStore) collect(opts []QueryOpt, firstOnly bool) ([]Entry, error) {
 	q := buildQuery(opts)
 
 	refs, err := s.scanFileRefs()
@@ -210,7 +210,7 @@ func (s *OSStore) collect(opts []QueryOpt, firstOnly bool) ([]StoreEntry, error)
 				return nil, err
 			}
 			if entryMatchesTags(entry, q) {
-				return []StoreEntry{entry}, nil
+				return []Entry{entry}, nil
 			}
 		}
 		return nil, nil
@@ -232,7 +232,7 @@ func (s *OSStore) collect(opts []QueryOpt, firstOnly bool) ([]StoreEntry, error)
 
 // readConcurrent reads each fileRef via a worker pool and returns entries
 // in the same order as refs.
-func (s *OSStore) readConcurrent(refs []fileRef) ([]StoreEntry, error) {
+func (s *OSStore) readConcurrent(refs []fileRef) ([]Entry, error) {
 	if len(refs) == 0 {
 		return nil, nil
 	}
@@ -241,7 +241,7 @@ func (s *OSStore) readConcurrent(refs []fileRef) ([]StoreEntry, error) {
 		workers = len(refs)
 	}
 
-	entries := make([]StoreEntry, len(refs))
+	entries := make([]Entry, len(refs))
 	g, ctx := errgroup.WithContext(context.Background())
 	jobs := make(chan int)
 
@@ -276,25 +276,25 @@ func (s *OSStore) readConcurrent(refs []fileRef) ([]StoreEntry, error) {
 	return entries, nil
 }
 
-// readEntry loads a single file and converts it to a StoreEntry. It populates
+// readEntry loads a single file and converts it to a Entry. It populates
 // Meta.Tags with the merged frontmatter+body-hashtag set and Meta.UpdatedAt
 // from the file's ModTime.
-func (s *OSStore) readEntry(r fileRef) (StoreEntry, error) {
+func (s *OSStore) readEntry(r fileRef) (Entry, error) {
 	path := r.absPath(s.root)
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return StoreEntry{}, err
+		return Entry{}, err
 	}
 	info, err := os.Stat(path)
 	if err != nil {
-		return StoreEntry{}, err
+		return Entry{}, err
 	}
 	fm, body, err := ParseNote(data)
 	if err != nil {
-		return StoreEntry{}, fmt.Errorf("%s: %w", path, err)
+		return Entry{}, fmt.Errorf("%s: %w", path, err)
 	}
 	meta := frontmatterToMeta(fm, r, info.ModTime(), body)
-	return StoreEntry{
+	return Entry{
 		ID:   r.id,
 		Meta: meta,
 		Body: string(body),
@@ -302,10 +302,10 @@ func (s *OSStore) readEntry(r fileRef) (StoreEntry, error) {
 }
 
 // Get returns the entry with the given ID.
-func (s *OSStore) Get(id int) (StoreEntry, error) {
+func (s *OSStore) Get(id int) (Entry, error) {
 	r, err := s.findFileRef(id)
 	if err != nil {
-		return StoreEntry{}, err
+		return Entry{}, err
 	}
 	return s.readEntry(r)
 }
@@ -340,13 +340,13 @@ func (s *OSStore) findFileRef(id int) (fileRef, error) {
 // zero a new ID is allocated via NextID (id.json + flock) and CreatedAt is
 // defaulted to time.Now if zero. On updates with a changed slug or date the
 // file is renamed atomically.
-func (s *OSStore) Put(entry StoreEntry) (StoreEntry, error) {
+func (s *OSStore) Put(entry Entry) (Entry, error) {
 	now := time.Now()
 
 	if entry.ID == 0 {
 		id, err := NextID(s.root)
 		if err != nil {
-			return StoreEntry{}, err
+			return Entry{}, err
 		}
 		entry.ID = id
 		if entry.Meta.CreatedAt.IsZero() {
@@ -355,36 +355,36 @@ func (s *OSStore) Put(entry StoreEntry) (StoreEntry, error) {
 	}
 
 	if entry.Meta.CreatedAt.IsZero() {
-		return StoreEntry{}, fmt.Errorf("note %d: CreatedAt is zero", entry.ID)
+		return Entry{}, fmt.Errorf("note %d: CreatedAt is zero", entry.ID)
 	}
 
 	var oldPath string
 	if prev, err := s.findFileRef(entry.ID); err == nil {
 		oldPath = prev.absPath(s.root)
 	} else if !errors.Is(err, ErrNotFound) {
-		return StoreEntry{}, err
+		return Entry{}, err
 	}
 
 	newRelPath, newAbsPath := s.pathFor(entry)
 	dirAbs := filepath.Dir(newAbsPath)
 	if err := os.MkdirAll(dirAbs, StoreDirMode(s.root)); err != nil {
-		return StoreEntry{}, fmt.Errorf("cannot create %s: %w", filepath.Dir(newRelPath), err)
+		return Entry{}, fmt.Errorf("cannot create %s: %w", filepath.Dir(newRelPath), err)
 	}
 
 	fm := metaToFrontmatter(entry.Meta)
 	data, err := FormatNote(fm, []byte(entry.Body))
 	if err != nil {
-		return StoreEntry{}, err
+		return Entry{}, err
 	}
 
 	if oldPath != "" && oldPath != newAbsPath {
 		if err := os.Rename(oldPath, newAbsPath); err != nil {
-			return StoreEntry{}, fmt.Errorf("cannot rename note: %w", err)
+			return Entry{}, fmt.Errorf("cannot rename note: %w", err)
 		}
 	}
 
 	if err := WriteAtomic(newAbsPath, data); err != nil {
-		return StoreEntry{}, err
+		return Entry{}, err
 	}
 
 	entry.Meta.UpdatedAt = now
@@ -394,13 +394,13 @@ func (s *OSStore) Put(entry StoreEntry) (StoreEntry, error) {
 // AbsPath returns the absolute path the store would use for entry given its
 // current Meta.CreatedAt, ID, and Meta.Slug. It derives the path purely from
 // the entry's fields — no I/O.
-func (s *OSStore) AbsPath(entry StoreEntry) string {
+func (s *OSStore) AbsPath(entry Entry) string {
 	_, abs := s.pathFor(entry)
 	return abs
 }
 
 // pathFor returns the rel/abs path the filename layout produces for entry.
-func (s *OSStore) pathFor(entry StoreEntry) (rel, abs string) {
+func (s *OSStore) pathFor(entry Entry) (rel, abs string) {
 	date := entry.Meta.CreatedAt.Format(dateLayout)
 	name := Filename(date, entry.ID, entry.Meta.Slug, entry.Meta.Type)
 	dir := DirPath(s.root, date)
@@ -409,11 +409,11 @@ func (s *OSStore) pathFor(entry StoreEntry) (rel, abs string) {
 	return rel, abs
 }
 
-// frontmatterToMeta converts the on-disk Frontmatter into the public
-// StoreMeta. Body hashtags are merged into Meta.Tags; Meta.UpdatedAt is set
+// frontmatterToMeta converts the on-disk frontmatter into the public
+// Meta. Body hashtags are merged into Meta.Tags; Meta.UpdatedAt is set
 // from the file ModTime; Meta.CreatedAt falls back to the filename date when
 // the frontmatter has no date.
-func frontmatterToMeta(fm Frontmatter, r fileRef, modTime time.Time, body []byte) StoreMeta {
+func frontmatterToMeta(fm frontmatter, r fileRef, modTime time.Time, body []byte) Meta {
 	created := fm.Date
 	if created.IsZero() {
 		if t, err := time.Parse(dateLayout, r.date); err == nil {
@@ -429,7 +429,7 @@ func frontmatterToMeta(fm Frontmatter, r fileRef, modTime time.Time, body []byte
 		slug = r.slug
 	}
 
-	return StoreMeta{
+	return Meta{
 		Title:       fm.Title,
 		Slug:        slug,
 		Type:        noteType,
@@ -443,10 +443,10 @@ func frontmatterToMeta(fm Frontmatter, r fileRef, modTime time.Time, body []byte
 	}
 }
 
-// metaToFrontmatter converts StoreMeta into the on-disk Frontmatter. Body
+// metaToFrontmatter converts Meta into the on-disk frontmatter. Body
 // hashtags are *not* stripped from Meta.Tags — they round-trip through the
 // frontmatter alongside the originals. UpdatedAt is never written.
-func metaToFrontmatter(m StoreMeta) Frontmatter {
+func metaToFrontmatter(m Meta) frontmatter {
 	var aliases []string
 	if len(m.Aliases) > 0 {
 		aliases = append([]string(nil), m.Aliases...)
@@ -455,7 +455,7 @@ func metaToFrontmatter(m StoreMeta) Frontmatter {
 	if len(m.Tags) > 0 {
 		tags = append([]string(nil), m.Tags...)
 	}
-	return Frontmatter{
+	return frontmatter{
 		Title:       m.Title,
 		Slug:        m.Slug,
 		Type:        m.Type,
@@ -469,7 +469,7 @@ func metaToFrontmatter(m StoreMeta) Frontmatter {
 }
 
 // extraFromYAML converts the internal yaml.Node map into the public
-// map[string]any used by StoreMeta.
+// map[string]any used by Meta.
 func extraFromYAML(in map[string]yaml.Node) map[string]any {
 	if len(in) == 0 {
 		return nil
@@ -487,7 +487,7 @@ func extraFromYAML(in map[string]yaml.Node) map[string]any {
 }
 
 // extraToYAML converts a map[string]any back into the yaml.Node
-// representation the Frontmatter type expects on write.
+// representation the frontmatter type expects on write.
 func extraToYAML(in map[string]any) map[string]yaml.Node {
 	if len(in) == 0 {
 		return nil

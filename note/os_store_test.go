@@ -43,7 +43,7 @@ func TestOSStore_IDsOrderIntegerIDNotLexicographic(t *testing.T) {
 	// 11 entries on the same day → IDs 1..11. Lexicographic order would
 	// sort 9 before 10/11; the integer-ID sort must put 11 first.
 	for i := 0; i < 11; i++ {
-		_, err := s.Put(StoreEntry{Meta: StoreMeta{Title: "", CreatedAt: today}, Body: "x"})
+		_, err := s.Put(Entry{Meta: Meta{Title: "", CreatedAt: today}, Body: "x"})
 		if err != nil {
 			t.Fatalf("Put: %v", err)
 		}
@@ -65,8 +65,8 @@ func TestOSStore_PutNewCreatesFile(t *testing.T) {
 	s := newOSTestStore(t)
 
 	created := time.Date(2026, 1, 15, 9, 0, 0, 0, time.UTC)
-	entry, err := s.Put(StoreEntry{
-		Meta: StoreMeta{Title: "hello", Slug: "hi", CreatedAt: created},
+	entry, err := s.Put(Entry{
+		Meta: Meta{Title: "hello", Slug: "hi", CreatedAt: created},
 		Body: "body text\n",
 	})
 	if err != nil {
@@ -89,7 +89,7 @@ func TestOSStore_PutSlugChangeRenames(t *testing.T) {
 	s := newOSTestStore(t)
 	created := time.Date(2026, 1, 15, 9, 0, 0, 0, time.UTC)
 
-	entry, err := s.Put(StoreEntry{Meta: StoreMeta{Slug: "old", CreatedAt: created}, Body: "b"})
+	entry, err := s.Put(Entry{Meta: Meta{Slug: "old", CreatedAt: created}, Body: "b"})
 	if err != nil {
 		t.Fatalf("Put new: %v", err)
 	}
@@ -112,7 +112,7 @@ func TestOSStore_PutDateChangeMovesToNewSubdir(t *testing.T) {
 	s := newOSTestStore(t)
 	created := time.Date(2026, 1, 15, 9, 0, 0, 0, time.UTC)
 
-	entry, err := s.Put(StoreEntry{Meta: StoreMeta{Slug: "x", CreatedAt: created}, Body: "b"})
+	entry, err := s.Put(Entry{Meta: Meta{Slug: "x", CreatedAt: created}, Body: "b"})
 	if err != nil {
 		t.Fatalf("Put: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestOSStore_Get(t *testing.T) {
 	s := newOSTestStore(t)
 	created := time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)
 
-	_, err := s.Put(StoreEntry{Meta: StoreMeta{Title: "t", CreatedAt: created}, Body: "body"})
+	_, err := s.Put(Entry{Meta: Meta{Title: "t", CreatedAt: created}, Body: "body"})
 	if err != nil {
 		t.Fatalf("Put: %v", err)
 	}
@@ -158,15 +158,15 @@ func TestOSStore_AllFilterByTagIncludesBodyHashtags(t *testing.T) {
 	created := time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)
 
 	// entry 1: frontmatter tag alpha
-	if _, err := s.Put(StoreEntry{Meta: StoreMeta{Tags: []string{"alpha"}, CreatedAt: created}, Body: "x"}); err != nil {
+	if _, err := s.Put(Entry{Meta: Meta{Tags: []string{"alpha"}, CreatedAt: created}, Body: "x"}); err != nil {
 		t.Fatalf("Put: %v", err)
 	}
 	// entry 2: body-hashtag beta
-	if _, err := s.Put(StoreEntry{Meta: StoreMeta{CreatedAt: created}, Body: "#beta is a body hashtag"}); err != nil {
+	if _, err := s.Put(Entry{Meta: Meta{CreatedAt: created}, Body: "#beta is a body hashtag"}); err != nil {
 		t.Fatalf("Put: %v", err)
 	}
 	// entry 3: neither tag
-	if _, err := s.Put(StoreEntry{Meta: StoreMeta{CreatedAt: created}, Body: "nothing"}); err != nil {
+	if _, err := s.Put(Entry{Meta: Meta{CreatedAt: created}, Body: "nothing"}); err != nil {
 		t.Fatalf("Put: %v", err)
 	}
 
@@ -192,7 +192,7 @@ func TestOSStore_FindStopsAtFirstMatch(t *testing.T) {
 	// Three todo entries across different days; newest first.
 	for i := 1; i <= 3; i++ {
 		day := time.Date(2026, 1, i, 0, 0, 0, 0, time.UTC)
-		if _, err := s.Put(StoreEntry{Meta: StoreMeta{Type: "todo", CreatedAt: day}, Body: ""}); err != nil {
+		if _, err := s.Put(Entry{Meta: Meta{Type: "todo", CreatedAt: day}, Body: ""}); err != nil {
 			t.Fatalf("Put: %v", err)
 		}
 	}
@@ -218,7 +218,7 @@ func TestOSStore_Delete(t *testing.T) {
 	s := newOSTestStore(t)
 	created := time.Date(2026, 1, 15, 0, 0, 0, 0, time.UTC)
 
-	entry, err := s.Put(StoreEntry{Meta: StoreMeta{Slug: "x", CreatedAt: created}, Body: "b"})
+	entry, err := s.Put(Entry{Meta: Meta{Slug: "x", CreatedAt: created}, Body: "b"})
 	if err != nil {
 		t.Fatalf("Put: %v", err)
 	}
@@ -238,9 +238,9 @@ func TestOSStore_AbsPathNoIO(t *testing.T) {
 	root := t.TempDir()
 	s := NewOSStore(root)
 
-	entry := StoreEntry{
+	entry := Entry{
 		ID: 42,
-		Meta: StoreMeta{
+		Meta: Meta{
 			Slug:      "demo",
 			CreatedAt: time.Date(2026, 2, 1, 0, 0, 0, 0, time.UTC),
 		},
@@ -259,8 +259,8 @@ func TestOSStore_RoundTripPreservesFrontmatterAndTags(t *testing.T) {
 	s := newOSTestStore(t)
 	created := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
 
-	entry, err := s.Put(StoreEntry{
-		Meta: StoreMeta{
+	entry, err := s.Put(Entry{
+		Meta: Meta{
 			Title:       "Test",
 			Slug:        "test",
 			Type:        "note",

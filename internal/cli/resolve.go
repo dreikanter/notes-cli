@@ -69,12 +69,12 @@ func ensureSingleLookupFlag(idStr, noteType, slug, tag string) error {
 
 // lookupEntry dispatches to the correct Store call for the set flag. An
 // empty flag set returns the newest note.
-func lookupEntry(store *note.OSStore, idStr, noteType, slug, tag string) (note.StoreEntry, error) {
+func lookupEntry(store *note.OSStore, idStr, noteType, slug, tag string) (note.Entry, error) {
 	switch {
 	case idStr != "":
 		id, err := strconv.Atoi(idStr)
 		if err != nil {
-			return note.StoreEntry{}, fmt.Errorf("--id must be an integer: %s", idStr)
+			return note.Entry{}, fmt.Errorf("--id must be an integer: %s", idStr)
 		}
 		return store.Get(id)
 	case noteType != "":
