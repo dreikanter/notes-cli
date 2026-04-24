@@ -1,83 +1,98 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
-	"path/filepath"
-	"time"
+	"strconv"
 
 	"github.com/dreikanter/notes-cli/note"
 	"github.com/spf13/cobra"
 )
 
 var resolveCmd = &cobra.Command{
-	Use:   "resolve [<id|type|query>]",
-	Short: "Resolve a note reference and print its absolute path",
-	Long: `Resolve a note reference and print its absolute path.
+	Use:   "resolve",
+	Short: "Print the absolute path of a note by explicit lookup flag",
+	Long: `Resolve a note by an explicit lookup flag and print its absolute path.
 
-With no arguments or flags, returns the most recent note.
+  notes resolve               - most recent note
+  notes resolve --id <id>     - exact ID
+  notes resolve --type <t>    - most recent note of that type
+  notes resolve --slug <s>    - most recent note with that slug
+  notes resolve --tag <t>     - most recent note with that tag
 
-With a positional argument, resolution follows this priority:
-  1. Exact numeric ID (e.g. "8823") — all-digit queries match IDs only;
-     an unknown numeric query errors instead of falling through
-  2. Type with special behavior (todo, backlog, weekly) — most recent match
-  3. Path (absolute or relative containing a separator) — exact match
-  4. Slug substring — most recent note whose slug contains the query
+Exactly one lookup flag (or none) may be provided.`,
+	Args: cobra.NoArgs,
+	RunE: resolveRunE,
+}
 
-Alternatively, use filter flags (--type, --slug, --tag, --today) for
-explicit attribute-based lookup. --type, --slug, and --tag cannot be
-combined with a positional argument; --today can, and restricts the
-positional resolution to notes dated today.`,
-	Args: cobra.MaximumNArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		root, err := notesRoot()
+func resolveRunE(cmd *cobra.Command, _ []string) error {
+	idStr, _ := cmd.Flags().GetString("id")
+	noteType, _ := cmd.Flags().GetString("type")
+	slug, _ := cmd.Flags().GetString("slug")
+	tag, _ := cmd.Flags().GetString("tag")
+
+	if err := ensureSingleLookupFlag(idStr, noteType, slug, tag); err != nil {
+		return err
+	}
+
+	store, err := notesStore()
+	if err != nil {
+		return err
+	}
+
+	entry, err := lookupEntry(store, idStr, noteType, slug, tag)
+	if err != nil {
+		if errors.Is(err, note.ErrNotFound) {
+			return fmt.Errorf("no matching note found")
+		}
+		return err
+	}
+
+	fmt.Fprintln(cmd.OutOrStdout(), store.AbsPath(entry))
+	return nil
+}
+
+// ensureSingleLookupFlag reports an error when more than one of id/type/slug/tag
+// is set; zero or one is allowed.
+func ensureSingleLookupFlag(idStr, noteType, slug, tag string) error {
+	count := 0
+	for _, v := range []string{idStr, noteType, slug, tag} {
+		if v != "" {
+			count++
+		}
+	}
+	if count > 1 {
+		return fmt.Errorf("resolve accepts at most one of --id, --type, --slug, --tag")
+	}
+	return nil
+}
+
+// lookupEntry dispatches to the correct Store call for the set flag. An
+// empty flag set returns the newest note.
+func lookupEntry(store *note.OSStore, idStr, noteType, slug, tag string) (note.StoreEntry, error) {
+	switch {
+	case idStr != "":
+		id, err := strconv.Atoi(idStr)
 		if err != nil {
-			return err
+			return note.StoreEntry{}, fmt.Errorf("--id must be an integer: %s", idStr)
 		}
-		f := readFilterFlags(cmd)
-
-		if len(args) == 1 {
-			if f.hasAttributeFilters() {
-				return fmt.Errorf("cannot combine positional argument with filter flags")
-			}
-
-			var ropts []note.ResolveOption
-			if f.Today {
-				ropts = []note.ResolveOption{note.WithDate(time.Now().Format(note.DateFormat))}
-			}
-
-			n, err := resolveRef(cmd, root, args[0], ropts...)
-			if err != nil {
-				return err
-			}
-
-			fmt.Fprintln(cmd.OutOrStdout(), filepath.Join(root, n.RelPath))
-			return nil
-		}
-
-		entry, ok, err := resolveOrFilter(cmd, root, nil, f)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			// No filters active: return the most recent note.
-			idx, loadErr := note.Load(root, loadOptsFor(cmd, f)...)
-			if loadErr != nil {
-				return loadErr
-			}
-			all := idx.Entries()
-			if len(all) == 0 {
-				return fmt.Errorf("no notes found")
-			}
-			entry = all[0]
-		}
-
-		fmt.Fprintln(cmd.OutOrStdout(), filepath.Join(root, entry.RelPath))
-		return nil
-	},
+		return store.Get(id)
+	case noteType != "":
+		return store.Find(note.WithType(noteType))
+	case slug != "":
+		return store.Find(note.WithSlug(slug))
+	case tag != "":
+		return store.Find(note.WithTag(tag))
+	default:
+		return store.Find()
+	}
 }
 
 func registerResolveFlags() {
-	addFilterFlags(resolveCmd)
+	resolveCmd.Flags().String("id", "", "resolve by exact numeric ID")
+	resolveCmd.Flags().String("type", "", "resolve the most recent note with the given type")
+	resolveCmd.Flags().String("slug", "", "resolve the most recent note with the given slug")
+	resolveCmd.Flags().String("tag", "", "resolve the most recent note with the given tag")
 }
 
 func init() {
