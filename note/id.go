@@ -52,26 +52,5 @@ func writeID(root string, idf idFile) error {
 	if err != nil {
 		return fmt.Errorf("cannot marshal id.json: %w", err)
 	}
-
-	target := filepath.Join(root, "id.json")
-	tmp, err := os.CreateTemp(root, "id-*.json.tmp")
-	if err != nil {
-		return fmt.Errorf("cannot create temp file for id.json: %w", err)
-	}
-	tmpName := tmp.Name()
-
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(tmpName)
-		return fmt.Errorf("cannot write temp id.json: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(tmpName)
-		return fmt.Errorf("cannot close temp id.json: %w", err)
-	}
-	if err := os.Rename(tmpName, target); err != nil {
-		os.Remove(tmpName)
-		return fmt.Errorf("cannot rename temp id.json: %w", err)
-	}
-	return nil
+	return WriteAtomic(filepath.Join(root, "id.json"), data)
 }

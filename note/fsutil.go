@@ -22,11 +22,11 @@ func StoreDirMode(root string) os.FileMode {
 func WriteAtomic(path string, data []byte) error {
 	tmpPath := path + ".tmp"
 	if err := os.WriteFile(tmpPath, data, 0o644); err != nil {
-		return fmt.Errorf("cannot write note: %w", err)
+		return fmt.Errorf("write %s: %w", tmpPath, err)
 	}
 	if err := os.Rename(tmpPath, path); err != nil {
 		os.Remove(tmpPath)
-		return fmt.Errorf("cannot replace note: %w", err)
+		return fmt.Errorf("rename %s: %w", tmpPath, err)
 	}
 	return nil
 }
