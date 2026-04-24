@@ -1,8 +1,6 @@
 package note
 
 import (
-	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -102,84 +100,5 @@ func TestExtractHashtagsBareHash(t *testing.T) {
 		if len(got) != 0 {
 			t.Errorf("input %q: expected no tags, got %v", in, got)
 		}
-	}
-}
-
-func writeNote(t *testing.T, root, rel, content string) {
-	t.Helper()
-	full := filepath.Join(root, rel)
-	if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestEntryBodyHashtags(t *testing.T) {
-	root := t.TempDir()
-	writeNote(t, root, "2026/01/20260101_1001.md",
-		"---\ntags: [fm]\n---\n\nBody #alpha and #beta, #alpha again.\n")
-	writeNote(t, root, "2026/01/20260102_1002.md",
-		"---\n---\n\nno hashtags here.\n")
-	writeNote(t, root, "2026/01/20260103_1003.md",
-		"no-frontmatter body #gamma\n")
-
-	idx, err := Load(root)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	byRel := make(map[string][]string)
-	for _, e := range idx.Entries() {
-		byRel[e.RelPath] = e.BodyHashtags()
-	}
-
-	if got := byRel["2026/01/20260101_1001.md"]; !reflect.DeepEqual(got, []string{"alpha", "beta"}) {
-		t.Errorf("1001 BodyHashtags = %v, want [alpha beta]", got)
-	}
-	if got := byRel["2026/01/20260102_1002.md"]; got != nil {
-		t.Errorf("1002 BodyHashtags = %v, want nil", got)
-	}
-	if got := byRel["2026/01/20260103_1003.md"]; !reflect.DeepEqual(got, []string{"gamma"}) {
-		t.Errorf("1003 BodyHashtags = %v, want [gamma]", got)
-	}
-}
-
-func TestEntryBodyHashtagsWithoutFrontmatter(t *testing.T) {
-	root := t.TempDir()
-	writeNote(t, root, "2026/01/20260101_1001.md",
-		"body #alpha #beta\n")
-
-	idx, err := Load(root, WithFrontmatter(false))
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	entries := idx.Entries()
-	if len(entries) != 1 {
-		t.Fatalf("got %d entries, want 1", len(entries))
-	}
-	if got := entries[0].BodyHashtags(); got != nil {
-		t.Errorf("BodyHashtags = %v, want nil when WithFrontmatter(false)", got)
-	}
-}
-
-func TestEntryBodyHashtagsReturnsCopy(t *testing.T) {
-	root := t.TempDir()
-	writeNote(t, root, "2026/01/20260101_1001.md",
-		"---\n---\n\nbody #alpha #beta\n")
-
-	idx, err := Load(root)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	entries := idx.Entries()
-	first := entries[0].BodyHashtags()
-	if len(first) == 0 {
-		t.Fatal("expected hashtags")
-	}
-	first[0] = "mutated"
-	second := entries[0].BodyHashtags()
-	if second[0] != "alpha" {
-		t.Errorf("mutation leaked: second[0] = %q, want %q", second[0], "alpha")
 	}
 }

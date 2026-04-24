@@ -23,9 +23,9 @@ func TestMemStore_IDsOrderNewestFirstThenIDDesc(t *testing.T) {
 	day1 := time.Date(2026, 1, 1, 10, 0, 0, 0, time.UTC)
 	day2 := time.Date(2026, 1, 2, 10, 0, 0, 0, time.UTC)
 
-	mustPut(t, s, StoreEntry{ID: 1, Meta: StoreMeta{CreatedAt: day1}})
-	mustPut(t, s, StoreEntry{ID: 2, Meta: StoreMeta{CreatedAt: day1}})
-	mustPut(t, s, StoreEntry{ID: 3, Meta: StoreMeta{CreatedAt: day2}})
+	mustPut(t, s, Entry{ID: 1, Meta: Meta{CreatedAt: day1}})
+	mustPut(t, s, Entry{ID: 2, Meta: Meta{CreatedAt: day1}})
+	mustPut(t, s, Entry{ID: 3, Meta: Meta{CreatedAt: day2}})
 
 	ids, err := s.IDs()
 	if err != nil {
@@ -40,7 +40,7 @@ func TestMemStore_IDsOrderNewestFirstThenIDDesc(t *testing.T) {
 func TestMemStore_AllNoOpts(t *testing.T) {
 	s := NewMemStore()
 	for i := 1; i <= 3; i++ {
-		mustPut(t, s, StoreEntry{ID: i, Meta: StoreMeta{CreatedAt: time.Date(2026, 1, i, 0, 0, 0, 0, time.UTC)}})
+		mustPut(t, s, Entry{ID: i, Meta: Meta{CreatedAt: time.Date(2026, 1, i, 0, 0, 0, 0, time.UTC)}})
 	}
 	entries, err := s.All()
 	if err != nil {
@@ -56,9 +56,9 @@ func TestMemStore_AllNoOpts(t *testing.T) {
 
 func TestMemStore_AllFilterByType(t *testing.T) {
 	s := NewMemStore()
-	mustPut(t, s, StoreEntry{ID: 1, Meta: StoreMeta{Type: "todo", CreatedAt: day(2026, 1, 1)}})
-	mustPut(t, s, StoreEntry{ID: 2, Meta: StoreMeta{Type: "note", CreatedAt: day(2026, 1, 2)}})
-	mustPut(t, s, StoreEntry{ID: 3, Meta: StoreMeta{Type: "todo", CreatedAt: day(2026, 1, 3)}})
+	mustPut(t, s, Entry{ID: 1, Meta: Meta{Type: "todo", CreatedAt: day(2026, 1, 1)}})
+	mustPut(t, s, Entry{ID: 2, Meta: Meta{Type: "note", CreatedAt: day(2026, 1, 2)}})
+	mustPut(t, s, Entry{ID: 3, Meta: Meta{Type: "todo", CreatedAt: day(2026, 1, 3)}})
 
 	got, err := s.All(WithType("todo"))
 	if err != nil {
@@ -71,9 +71,9 @@ func TestMemStore_AllFilterByType(t *testing.T) {
 
 func TestMemStore_AllMultipleTagsAreAND(t *testing.T) {
 	s := NewMemStore()
-	mustPut(t, s, StoreEntry{ID: 1, Meta: StoreMeta{Tags: []string{"a"}, CreatedAt: day(2026, 1, 1)}})
-	mustPut(t, s, StoreEntry{ID: 2, Meta: StoreMeta{Tags: []string{"a", "b"}, CreatedAt: day(2026, 1, 2)}})
-	mustPut(t, s, StoreEntry{ID: 3, Meta: StoreMeta{Tags: []string{"a", "b", "c"}, CreatedAt: day(2026, 1, 3)}})
+	mustPut(t, s, Entry{ID: 1, Meta: Meta{Tags: []string{"a"}, CreatedAt: day(2026, 1, 1)}})
+	mustPut(t, s, Entry{ID: 2, Meta: Meta{Tags: []string{"a", "b"}, CreatedAt: day(2026, 1, 2)}})
+	mustPut(t, s, Entry{ID: 3, Meta: Meta{Tags: []string{"a", "b", "c"}, CreatedAt: day(2026, 1, 3)}})
 
 	got, err := s.All(WithTag("a"), WithTag("b"))
 	if err != nil {
@@ -86,7 +86,7 @@ func TestMemStore_AllMultipleTagsAreAND(t *testing.T) {
 
 func TestMemStore_TagMatchCaseInsensitive(t *testing.T) {
 	s := NewMemStore()
-	mustPut(t, s, StoreEntry{ID: 1, Meta: StoreMeta{Tags: []string{"Alpha"}, CreatedAt: day(2026, 1, 1)}})
+	mustPut(t, s, Entry{ID: 1, Meta: Meta{Tags: []string{"Alpha"}, CreatedAt: day(2026, 1, 1)}})
 	got, err := s.All(WithTag("alpha"))
 	if err != nil {
 		t.Fatalf("All: %v", err)
@@ -98,7 +98,7 @@ func TestMemStore_TagMatchCaseInsensitive(t *testing.T) {
 
 func TestMemStore_AllNoMatchEmptySliceNotError(t *testing.T) {
 	s := NewMemStore()
-	mustPut(t, s, StoreEntry{ID: 1, Meta: StoreMeta{Type: "note", CreatedAt: day(2026, 1, 1)}})
+	mustPut(t, s, Entry{ID: 1, Meta: Meta{Type: "note", CreatedAt: day(2026, 1, 1)}})
 
 	got, err := s.All(WithType("todo"))
 	if err != nil {
@@ -114,9 +114,9 @@ func TestMemStore_AllNoMatchEmptySliceNotError(t *testing.T) {
 
 func TestMemStore_AllFilterByExactDate(t *testing.T) {
 	s := NewMemStore()
-	mustPut(t, s, StoreEntry{ID: 1, Meta: StoreMeta{CreatedAt: day(2026, 1, 1)}})
-	mustPut(t, s, StoreEntry{ID: 2, Meta: StoreMeta{CreatedAt: time.Date(2026, 1, 1, 23, 59, 0, 0, time.UTC)}})
-	mustPut(t, s, StoreEntry{ID: 3, Meta: StoreMeta{CreatedAt: day(2026, 1, 2)}})
+	mustPut(t, s, Entry{ID: 1, Meta: Meta{CreatedAt: day(2026, 1, 1)}})
+	mustPut(t, s, Entry{ID: 2, Meta: Meta{CreatedAt: time.Date(2026, 1, 1, 23, 59, 0, 0, time.UTC)}})
+	mustPut(t, s, Entry{ID: 3, Meta: Meta{CreatedAt: day(2026, 1, 2)}})
 
 	got, err := s.All(WithExactDate(day(2026, 1, 1)))
 	if err != nil {
@@ -129,9 +129,9 @@ func TestMemStore_AllFilterByExactDate(t *testing.T) {
 
 func TestMemStore_AllFilterByBeforeDate(t *testing.T) {
 	s := NewMemStore()
-	mustPut(t, s, StoreEntry{ID: 1, Meta: StoreMeta{CreatedAt: day(2026, 1, 1)}})
-	mustPut(t, s, StoreEntry{ID: 2, Meta: StoreMeta{CreatedAt: day(2026, 1, 2)}})
-	mustPut(t, s, StoreEntry{ID: 3, Meta: StoreMeta{CreatedAt: day(2026, 1, 3)}})
+	mustPut(t, s, Entry{ID: 1, Meta: Meta{CreatedAt: day(2026, 1, 1)}})
+	mustPut(t, s, Entry{ID: 2, Meta: Meta{CreatedAt: day(2026, 1, 2)}})
+	mustPut(t, s, Entry{ID: 3, Meta: Meta{CreatedAt: day(2026, 1, 3)}})
 
 	got, err := s.All(WithBeforeDate(day(2026, 1, 3)))
 	if err != nil {
@@ -144,8 +144,8 @@ func TestMemStore_AllFilterByBeforeDate(t *testing.T) {
 
 func TestMemStore_FindReturnsNewest(t *testing.T) {
 	s := NewMemStore()
-	mustPut(t, s, StoreEntry{ID: 1, Meta: StoreMeta{Type: "todo", CreatedAt: day(2026, 1, 1)}})
-	mustPut(t, s, StoreEntry{ID: 2, Meta: StoreMeta{Type: "todo", CreatedAt: day(2026, 1, 2)}})
+	mustPut(t, s, Entry{ID: 1, Meta: Meta{Type: "todo", CreatedAt: day(2026, 1, 1)}})
+	mustPut(t, s, Entry{ID: 2, Meta: Meta{Type: "todo", CreatedAt: day(2026, 1, 2)}})
 
 	got, err := s.Find(WithType("todo"))
 	if err != nil {
@@ -166,7 +166,7 @@ func TestMemStore_FindNoMatchErrNotFound(t *testing.T) {
 
 func TestMemStore_Get(t *testing.T) {
 	s := NewMemStore()
-	mustPut(t, s, StoreEntry{ID: 1, Meta: StoreMeta{Title: "one", CreatedAt: day(2026, 1, 1)}})
+	mustPut(t, s, Entry{ID: 1, Meta: Meta{Title: "one", CreatedAt: day(2026, 1, 1)}})
 
 	got, err := s.Get(1)
 	if err != nil {
@@ -184,7 +184,7 @@ func TestMemStore_Get(t *testing.T) {
 
 func TestMemStore_PutAssignsIDStartingAt1(t *testing.T) {
 	s := NewMemStore()
-	e, err := s.Put(StoreEntry{Body: "hello"})
+	e, err := s.Put(Entry{Body: "hello"})
 	if err != nil {
 		t.Fatalf("Put: %v", err)
 	}
@@ -195,10 +195,10 @@ func TestMemStore_PutAssignsIDStartingAt1(t *testing.T) {
 
 func TestMemStore_PutAssignsMaxPlusOne(t *testing.T) {
 	s := NewMemStore()
-	mustPut(t, s, StoreEntry{ID: 5, Meta: StoreMeta{CreatedAt: day(2026, 1, 1)}})
-	mustPut(t, s, StoreEntry{ID: 3, Meta: StoreMeta{CreatedAt: day(2026, 1, 1)}})
+	mustPut(t, s, Entry{ID: 5, Meta: Meta{CreatedAt: day(2026, 1, 1)}})
+	mustPut(t, s, Entry{ID: 3, Meta: Meta{CreatedAt: day(2026, 1, 1)}})
 
-	e, err := s.Put(StoreEntry{Body: "new"})
+	e, err := s.Put(Entry{Body: "new"})
 	if err != nil {
 		t.Fatalf("Put: %v", err)
 	}
@@ -209,9 +209,9 @@ func TestMemStore_PutAssignsMaxPlusOne(t *testing.T) {
 
 func TestMemStore_PutExistingIDReplaces(t *testing.T) {
 	s := NewMemStore()
-	mustPut(t, s, StoreEntry{ID: 1, Meta: StoreMeta{Title: "old"}, Body: "old body"})
+	mustPut(t, s, Entry{ID: 1, Meta: Meta{Title: "old"}, Body: "old body"})
 
-	e, err := s.Put(StoreEntry{ID: 1, Meta: StoreMeta{Title: "new"}, Body: "new body"})
+	e, err := s.Put(Entry{ID: 1, Meta: Meta{Title: "new"}, Body: "new body"})
 	if err != nil {
 		t.Fatalf("Put: %v", err)
 	}
@@ -227,7 +227,7 @@ func TestMemStore_PutExistingIDReplaces(t *testing.T) {
 func TestMemStore_PutZeroCreatedAtSetsToNow(t *testing.T) {
 	s := NewMemStore()
 	before := time.Now()
-	e, err := s.Put(StoreEntry{Body: "hi"})
+	e, err := s.Put(Entry{Body: "hi"})
 	if err != nil {
 		t.Fatalf("Put: %v", err)
 	}
@@ -241,7 +241,7 @@ func TestMemStore_PutZeroCreatedAtSetsToNow(t *testing.T) {
 func TestMemStore_PutAlwaysSetsUpdatedAt(t *testing.T) {
 	s := NewMemStore()
 	originalCreated := day(2026, 1, 1)
-	e, err := s.Put(StoreEntry{ID: 1, Meta: StoreMeta{CreatedAt: originalCreated}})
+	e, err := s.Put(Entry{ID: 1, Meta: Meta{CreatedAt: originalCreated}})
 	if err != nil {
 		t.Fatalf("Put: %v", err)
 	}
@@ -253,7 +253,7 @@ func TestMemStore_PutAlwaysSetsUpdatedAt(t *testing.T) {
 	}
 
 	time.Sleep(time.Millisecond)
-	e2, err := s.Put(StoreEntry{ID: 1, Meta: StoreMeta{CreatedAt: originalCreated}})
+	e2, err := s.Put(Entry{ID: 1, Meta: Meta{CreatedAt: originalCreated}})
 	if err != nil {
 		t.Fatalf("Put: %v", err)
 	}
@@ -264,7 +264,7 @@ func TestMemStore_PutAlwaysSetsUpdatedAt(t *testing.T) {
 
 func TestMemStore_Delete(t *testing.T) {
 	s := NewMemStore()
-	mustPut(t, s, StoreEntry{ID: 1, Meta: StoreMeta{CreatedAt: day(2026, 1, 1)}})
+	mustPut(t, s, Entry{ID: 1, Meta: Meta{CreatedAt: day(2026, 1, 1)}})
 
 	if err := s.Delete(1); err != nil {
 		t.Fatalf("Delete hit: %v", err)
@@ -280,7 +280,7 @@ func TestMemStore_Delete(t *testing.T) {
 func TestMemStore_ConcurrentReads(t *testing.T) {
 	s := NewMemStore()
 	for i := 1; i <= 20; i++ {
-		mustPut(t, s, StoreEntry{ID: i, Meta: StoreMeta{CreatedAt: day(2026, 1, i%28+1)}})
+		mustPut(t, s, Entry{ID: i, Meta: Meta{CreatedAt: day(2026, 1, i%28+1)}})
 	}
 
 	var wg sync.WaitGroup
@@ -303,7 +303,7 @@ func TestMemStore_ConcurrentReads(t *testing.T) {
 	wg.Wait()
 }
 
-func mustPut(t *testing.T, s *MemStore, e StoreEntry) StoreEntry {
+func mustPut(t *testing.T, s *MemStore, e Entry) Entry {
 	t.Helper()
 	out, err := s.Put(e)
 	if err != nil {
@@ -316,7 +316,7 @@ func day(y int, m time.Month, d int) time.Time {
 	return time.Date(y, m, d, 0, 0, 0, 0, time.UTC)
 }
 
-func entryIDs(entries []StoreEntry) []int {
+func entryIDs(entries []Entry) []int {
 	out := make([]int, len(entries))
 	for i, e := range entries {
 		out[i] = e.ID

@@ -28,7 +28,7 @@ func runAnnotate(t *testing.T, root string, args ...string) (string, error) {
 }
 
 func TestAnnotateEmptyFieldsAllEmpty(t *testing.T) {
-	got := annotateEmptyFields(note.StoreMeta{})
+	got := annotateEmptyFields(note.Meta{})
 	want := []string{"title", "description", "tags"}
 	if !equalStrings(got, want) {
 		t.Errorf("got %v, want %v", got, want)
@@ -36,7 +36,7 @@ func TestAnnotateEmptyFieldsAllEmpty(t *testing.T) {
 }
 
 func TestAnnotateEmptyFieldsPartial(t *testing.T) {
-	m := note.StoreMeta{Title: "Existing"}
+	m := note.Meta{Title: "Existing"}
 	got := annotateEmptyFields(m)
 	want := []string{"description", "tags"}
 	if !equalStrings(got, want) {
@@ -45,7 +45,7 @@ func TestAnnotateEmptyFieldsPartial(t *testing.T) {
 }
 
 func TestAnnotateEmptyFieldsAllFilled(t *testing.T) {
-	m := note.StoreMeta{Title: "T", Description: "D", Tags: []string{"x"}}
+	m := note.Meta{Title: "T", Description: "D", Tags: []string{"x"}}
 	got := annotateEmptyFields(m)
 	if len(got) != 0 {
 		t.Errorf("got %v, want empty", got)
@@ -186,7 +186,7 @@ func TestParseAnnotationErrorFlag(t *testing.T) {
 }
 
 func TestMergeAnnotationFillsEmpty(t *testing.T) {
-	existing := note.StoreMeta{Slug: "meeting", Public: true}
+	existing := note.Meta{Slug: "meeting", Public: true}
 	gen := annotateResult{
 		Title:       "New",
 		Description: "Generated desc",
@@ -212,7 +212,7 @@ func TestMergeAnnotationFillsEmpty(t *testing.T) {
 }
 
 func TestMergeAnnotationPreservesFilledFields(t *testing.T) {
-	existing := note.StoreMeta{
+	existing := note.Meta{
 		Title:       "Existing title",
 		Description: "Existing desc",
 		Tags:        []string{"keep"},

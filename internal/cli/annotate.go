@@ -171,7 +171,7 @@ func runClaude(ctx context.Context, model, schema, prompt string) ([]byte, error
 
 // annotateEmptyFields returns the empty fields among {title, description, tags}
 // in a deterministic order. "tags" counts as empty when the slice is empty.
-func annotateEmptyFields(m note.StoreMeta) []string {
+func annotateEmptyFields(m note.Meta) []string {
 	var empty []string
 	if m.Title == "" {
 		empty = append(empty, "title")
@@ -254,7 +254,7 @@ func snippet(s string, n int) string {
 
 // mergeAnnotation fills empty fields in existing from gen.
 // Non-empty fields in existing are preserved.
-func mergeAnnotation(existing note.StoreMeta, gen annotateResult) note.StoreMeta {
+func mergeAnnotation(existing note.Meta, gen annotateResult) note.Meta {
 	merged := existing
 	if merged.Title == "" {
 		merged.Title = gen.Title

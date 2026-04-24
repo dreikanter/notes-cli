@@ -9,7 +9,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const frontmatterDelim = "---"
+const fmDelim = "---"
 
 func yamlKindName(k yaml.Kind) string {
 	switch k {
@@ -27,9 +27,9 @@ func yamlKindName(k yaml.Kind) string {
 	return fmt.Sprintf("kind(%d)", k)
 }
 
-// Frontmatter holds optional fields for note frontmatter.
+// frontmatter holds optional fields for note frontmatter.
 // Adding a field is a one-line struct addition — no other changes required.
-type Frontmatter struct {
+type frontmatter struct {
 	Title       string               `yaml:"title,omitempty"`
 	Slug        string               `yaml:"slug,omitempty"`
 	Type        string               `yaml:"type,omitempty"`
@@ -42,7 +42,7 @@ type Frontmatter struct {
 }
 
 // IsZero reports whether f has no fields set, including Extra.
-func (f Frontmatter) IsZero() bool {
+func (f frontmatter) IsZero() bool {
 	return f.Title == "" && f.Slug == "" && f.Type == "" && f.Date.IsZero() &&
 		len(f.Tags) == 0 && len(f.Aliases) == 0 && f.Description == "" && !f.Public && len(f.Extra) == 0
 }
@@ -50,7 +50,7 @@ func (f Frontmatter) IsZero() bool {
 // UnmarshalYAML decodes a mapping node into f. Reserved keys populate the
 // typed fields; unknown keys are captured in f.Extra as yaml.Node values.
 // Duplicate top-level keys and non-scalar keys are rejected.
-func (f *Frontmatter) UnmarshalYAML(node *yaml.Node) error {
+func (f *frontmatter) UnmarshalYAML(node *yaml.Node) error {
 	if node.Kind != yaml.MappingNode {
 		return fmt.Errorf("frontmatter: expected mapping, got %s", yamlKindName(node.Kind))
 	}
@@ -110,7 +110,7 @@ func (f *Frontmatter) UnmarshalYAML(node *yaml.Node) error {
 // MarshalYAML composes a mapping node with reserved fields first (in fixed
 // order) and Extra keys alpha-sorted. Zero-valued reserved fields are omitted,
 // matching the `omitempty` struct-tag discipline.
-func (f Frontmatter) MarshalYAML() (interface{}, error) {
+func (f frontmatter) MarshalYAML() (interface{}, error) {
 	node := &yaml.Node{Kind: yaml.MappingNode}
 
 	appendString := func(key, value string) {
@@ -194,21 +194,21 @@ func (f Frontmatter) MarshalYAML() (interface{}, error) {
 }
 
 // ParseNote splits a note file into its frontmatter and body.
-// If no frontmatter block is present, the zero Frontmatter is returned along
+// If no frontmatter block is present, the zero frontmatter is returned along
 // with the full input as body and a nil error.
 // If the frontmatter block is present but malformed, a non-nil error is
-// returned along with the zero Frontmatter; the body is still returned as
+// returned along with the zero frontmatter; the body is still returned as
 // a sub-slice so bulk readers can fall back to body-only processing.
 // The returned body is always a sub-slice of the input — no allocation.
-func ParseNote(data []byte) (Frontmatter, []byte, error) {
+func ParseNote(data []byte) (frontmatter, []byte, error) {
 	bodyStart, fmEnd, ok := frontmatterEnd(data)
 	if !ok {
-		return Frontmatter{}, data, nil
+		return frontmatter{}, data, nil
 	}
-	yamlStart := len(frontmatterDelim) + 1
-	var f Frontmatter
+	yamlStart := len(fmDelim) + 1
+	var f frontmatter
 	if err := yaml.Unmarshal(data[yamlStart:fmEnd], &f); err != nil {
-		return Frontmatter{}, data[bodyStart:], fmt.Errorf("parse frontmatter: %w", err)
+		return frontmatter{}, data[bodyStart:], fmt.Errorf("parse frontmatter: %w", err)
 	}
 	return f, data[bodyStart:], nil
 }
@@ -217,7 +217,7 @@ func ParseNote(data []byte) (Frontmatter, []byte, error) {
 // block entirely when f.IsZero(). Marshal errors surface to the caller;
 // f.Extra values sourced from arbitrary YAML input can in principle fail to
 // re-encode, so callers should handle the error rather than assume success.
-func FormatNote(f Frontmatter, body []byte) ([]byte, error) {
+func FormatNote(f frontmatter, body []byte) ([]byte, error) {
 	if f.IsZero() {
 		return body, nil
 	}
@@ -252,7 +252,7 @@ func StripFrontmatter(data []byte) []byte {
 // line, exclusive), bodyStart (index after the closing delimiter line and
 // one optional blank line), and ok=true if a valid block was found.
 func frontmatterEnd(data []byte) (bodyStart, fmEnd int, ok bool) {
-	delim := []byte(frontmatterDelim)
+	delim := []byte(fmDelim)
 	if !bytes.HasPrefix(data, delim) {
 		return 0, 0, false
 	}

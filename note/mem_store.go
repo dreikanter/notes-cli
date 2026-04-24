@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// MemStore is an in-memory Store backed by map[int]StoreEntry with an
+// MemStore is an in-memory Store backed by map[int]Entry with an
 // RWMutex. It is never user-facing — it exists to validate the Store
 // interface shape and to serve as the test double for command tests.
 //
@@ -16,14 +16,14 @@ import (
 // case-insensitive.
 type MemStore struct {
 	mu      sync.RWMutex
-	entries map[int]StoreEntry
+	entries map[int]Entry
 }
 
 var _ Store = (*MemStore)(nil)
 
 // NewMemStore returns an empty MemStore.
 func NewMemStore() *MemStore {
-	return &MemStore{entries: make(map[int]StoreEntry)}
+	return &MemStore{entries: make(map[int]Entry)}
 }
 
 // IDs returns every stored ID newest-first by Meta.CreatedAt. Ties within
@@ -44,7 +44,7 @@ func (s *MemStore) IDs() ([]int, error) {
 // All returns every entry matching opts, newest-first by Meta.CreatedAt.
 // See Store.All for the error contract: zero matches yield an empty slice
 // and a nil error.
-func (s *MemStore) All(opts ...QueryOpt) ([]StoreEntry, error) {
+func (s *MemStore) All(opts ...QueryOpt) ([]Entry, error) {
 	q := buildQuery(opts)
 
 	s.mu.RLock()
@@ -57,7 +57,7 @@ func (s *MemStore) All(opts ...QueryOpt) ([]StoreEntry, error) {
 
 // Find returns the newest entry matching opts, or ErrNotFound when no entry
 // matches.
-func (s *MemStore) Find(opts ...QueryOpt) (StoreEntry, error) {
+func (s *MemStore) Find(opts ...QueryOpt) (Entry, error) {
 	q := buildQuery(opts)
 
 	s.mu.RLock()
@@ -65,20 +65,20 @@ func (s *MemStore) Find(opts ...QueryOpt) (StoreEntry, error) {
 
 	matches := s.matchLocked(q)
 	if len(matches) == 0 {
-		return StoreEntry{}, fmt.Errorf("%w", ErrNotFound)
+		return Entry{}, fmt.Errorf("%w", ErrNotFound)
 	}
 	s.sortEntriesByRecency(matches)
 	return matches[0], nil
 }
 
 // Get returns the entry with the given ID, or ErrNotFound.
-func (s *MemStore) Get(id int) (StoreEntry, error) {
+func (s *MemStore) Get(id int) (Entry, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	e, ok := s.entries[id]
 	if !ok {
-		return StoreEntry{}, fmt.Errorf("%w: %d", ErrNotFound, id)
+		return Entry{}, fmt.Errorf("%w: %d", ErrNotFound, id)
 	}
 	return e, nil
 }
@@ -87,7 +87,7 @@ func (s *MemStore) Get(id int) (StoreEntry, error) {
 // max(existing IDs) + 1 (1 for an empty store); otherwise the existing
 // entry is replaced. Meta.CreatedAt is set to time.Now when zero, and
 // Meta.UpdatedAt is always set to time.Now.
-func (s *MemStore) Put(entry StoreEntry) (StoreEntry, error) {
+func (s *MemStore) Put(entry Entry) (Entry, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -117,8 +117,8 @@ func (s *MemStore) Delete(id int) error {
 
 // matchLocked returns every entry that matches q. Caller holds s.mu for
 // read (RLock or Lock).
-func (s *MemStore) matchLocked(q query) []StoreEntry {
-	out := make([]StoreEntry, 0, len(s.entries))
+func (s *MemStore) matchLocked(q query) []Entry {
+	out := make([]Entry, 0, len(s.entries))
 	for _, e := range s.entries {
 		if matches(e, q) {
 			out = append(out, e)
@@ -153,7 +153,7 @@ func (s *MemStore) sortIDsLocked(ids []int) {
 
 // sortEntriesByRecency sorts entries newest-first by CreatedAt with the same
 // tie-break as sortIDsLocked.
-func (s *MemStore) sortEntriesByRecency(entries []StoreEntry) {
+func (s *MemStore) sortEntriesByRecency(entries []Entry) {
 	sort.Slice(entries, func(i, j int) bool {
 		if !entries[i].Meta.CreatedAt.Equal(entries[j].Meta.CreatedAt) {
 			return entries[i].Meta.CreatedAt.After(entries[j].Meta.CreatedAt)
@@ -174,7 +174,7 @@ func buildQuery(opts []QueryOpt) query {
 // matches reports whether entry satisfies every filter in q. Tag comparison
 // is case-insensitive; date comparisons are at day precision in the filter's
 // location.
-func matches(entry StoreEntry, q query) bool {
+func matches(entry Entry, q query) bool {
 	if q.typeSet && entry.Meta.Type != q.noteType {
 		return false
 	}
