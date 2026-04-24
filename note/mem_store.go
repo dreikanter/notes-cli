@@ -65,7 +65,7 @@ func (s *MemStore) Find(opts ...QueryOpt) (Entry, error) {
 
 	matches := s.matchLocked(q)
 	if len(matches) == 0 {
-		return Entry{}, fmt.Errorf("%w", ErrNotFound)
+		return Entry{}, ErrNotFound
 	}
 	s.sortEntriesByRecency(matches)
 	return matches[0], nil

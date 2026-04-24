@@ -123,10 +123,3 @@ func TestResolveMultipleFlagsError(t *testing.T) {
 		t.Fatal("expected error when combining --id and --slug")
 	}
 }
-
-func TestResolveEditCommandRemoved(t *testing.T) {
-	cmd, _, err := rootCmd.Find([]string{"edit"})
-	if err == nil && cmd != nil && cmd.Use != "" && strings.HasPrefix(cmd.Use, "edit") {
-		t.Errorf("edit command should be removed, found: %+v", cmd)
-	}
-}

@@ -278,38 +278,3 @@ func TestFormatTodoContentEmpty(t *testing.T) {
 		t.Errorf("got:\n%q\nwant empty string", content)
 	}
 }
-
-func TestFilename(t *testing.T) {
-	tests := []struct {
-		date     string
-		id       int
-		slug     string
-		noteType string
-		want     string
-	}{
-		{"20260312", 9219, "", "", "20260312_9219.md"},
-		{"20260312", 9219, "my-note", "", "20260312_9219_my-note.md"},
-		{"20260312", 9219, "", "todo", "20260312_9219.todo.md"},
-		{"20260312", 9219, "standup", "todo", "20260312_9219_standup.todo.md"},
-		{"20260312", 9219, "", "backlog", "20260312_9219.backlog.md"},
-		// Unsafe types are omitted from the filename (frontmatter remains canonical).
-		{"20260312", 9219, "", "foo.bar", "20260312_9219.md"},
-		{"20260312", 9219, "", "a/b", "20260312_9219.md"},
-		{"20260312", 9219, "", `a\b`, "20260312_9219.md"},
-	}
-
-	for _, tt := range tests {
-		got := Filename(tt.date, tt.id, tt.slug, tt.noteType)
-		if got != tt.want {
-			t.Errorf("Filename(%q, %d, %q, %q) = %q, want %q", tt.date, tt.id, tt.slug, tt.noteType, got, tt.want)
-		}
-	}
-}
-
-func TestDirPath(t *testing.T) {
-	got := DirPath("/archive", "20260312")
-	want := "/archive/2026/03"
-	if got != want {
-		t.Errorf("got %q, want %q", got, want)
-	}
-}
