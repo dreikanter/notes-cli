@@ -1,10 +1,10 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/dreikanter/notes-cli/note"
@@ -32,18 +32,16 @@ var newCmd = &cobra.Command{
 			return fmt.Errorf("--upsert requires --type or --slug")
 		}
 
-		root, err := notesRoot()
+		store, err := notesStore()
 		if err != nil {
 			return err
 		}
 
 		if upsert {
-			path, found, err := findUpsertNote(cmd, root, noteType, slug)
-			if err != nil {
+			if existing, found, err := findUpsertEntry(store, noteType, slug); err != nil {
 				return err
-			}
-			if found {
-				fmt.Fprintln(cmd.OutOrStdout(), path)
+			} else if found {
+				fmt.Fprintln(cmd.OutOrStdout(), store.AbsPath(existing))
 				return nil
 			}
 		}
@@ -53,21 +51,23 @@ var newCmd = &cobra.Command{
 			return err
 		}
 
-		fullPath, err := createNote(createNoteParams{
-			Root:        root,
-			Slug:        slug,
-			Type:        noteType,
-			Tags:        tags,
-			Title:       title,
-			Description: description,
-			Public:      publicFlag,
-			Body:        body,
-		})
+		entry := note.StoreEntry{
+			Meta: note.StoreMeta{
+				Title:       title,
+				Slug:        slug,
+				Type:        noteType,
+				Tags:        tags,
+				Description: description,
+				Public:      publicFlag,
+			},
+			Body: body,
+		}
+		saved, err := store.Put(entry)
 		if err != nil {
 			return err
 		}
 
-		fmt.Fprintln(cmd.OutOrStdout(), fullPath)
+		fmt.Fprintln(cmd.OutOrStdout(), store.AbsPath(saved))
 		return nil
 	},
 }
@@ -88,25 +88,25 @@ func stdinIsTerminal(in io.Reader) bool {
 	return fi.Mode()&os.ModeCharDevice != 0
 }
 
-// findUpsertNote returns the absolute path of an existing today's note
-// matching noteType and slug, or ("", false, nil) when none exists.
-func findUpsertNote(cmd *cobra.Command, root, noteType, slug string) (string, bool, error) {
-	today := time.Now().Format(note.DateFormat)
-	idx, err := note.Load(root, note.WithFrontmatter(false), note.WithLogger(stderrLogger(cmd)))
-	if err != nil {
-		return "", false, err
-	}
-	entries := note.FilterByDate(idx.Entries(), today)
+// findUpsertEntry looks for today's note matching noteType and slug.
+// Returns (entry, true, nil) on hit, (zero, false, nil) on clean miss, and
+// a non-nil error only for I/O failures.
+func findUpsertEntry(store note.Store, noteType, slug string) (note.StoreEntry, bool, error) {
+	opts := []note.QueryOpt{note.WithExactDate(time.Now())}
 	if noteType != "" {
-		entries = note.FilterByTypes(entries, []string{noteType})
+		opts = append(opts, note.WithType(noteType))
 	}
 	if slug != "" {
-		entries = note.FilterBySlug(entries, slug)
+		opts = append(opts, note.WithSlug(slug))
 	}
-	if len(entries) == 0 {
-		return "", false, nil
+	entry, err := store.Find(opts...)
+	if err != nil {
+		if errors.Is(err, note.ErrNotFound) {
+			return note.StoreEntry{}, false, nil
+		}
+		return note.StoreEntry{}, false, err
 	}
-	return filepath.Join(root, entries[0].RelPath), true, nil
+	return entry, true, nil
 }
 
 // readStdinBody reads stdin when it is not a terminal and returns its content.
