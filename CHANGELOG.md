@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.6] - 2026-04-24
+
+### Changed
+
+- **Breaking**: `notes ls` now prints one integer ID per line (newest first) instead of one absolute path per line. Scripts that piped `notes ls` into `notes read` / `notes rm` should switch to `notes resolve` if they need paths.
+- `internal/cli/ls.go`: replace `note.Load` + filter pipeline with `store.IDs()` (fast directory-scan path) when no filter flags are set, and `store.All(...)` with composed `QueryOpt`s otherwise.
+- Flag mapping: `--type` → `WithType` (now single-valued), `--slug` → `WithSlug`, `--tag` → `WithTag` (repeatable, AND), `--today` → `WithExactDate(time.Now())`.
+- Removed the `--name` filename-fragment flag; it will return as a tag/title-fragment query option in a future phase ([#236]).
+
+[#236]: https://github.com/dreikanter/notes-cli/pull/236
+
 ## [0.3.5] - 2026-04-24
 
 ### Changed
