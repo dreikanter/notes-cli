@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.23] - 2026-04-25
+
+### Changed
+
+- Further simplify the test suite by consolidating repetitive `notes ls` filter cases and adding small store-test assertion helpers ([#256]).
+
 ## [0.3.22] - 2026-04-25
 
 ### Changed
@@ -1061,3 +1067,4 @@ No implementations and no behaviour changes — this PR only establishes the con
 [#168]: https://github.com/dreikanter/notesctl/pull/168
 [#254]: https://github.com/dreikanter/notesctl/pull/254
 [#255]: https://github.com/dreikanter/notesctl/pull/255
+[#256]: https://github.com/dreikanter/notesctl/pull/256
