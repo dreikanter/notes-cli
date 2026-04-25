@@ -45,13 +45,13 @@ func TestLsFilters(t *testing.T) {
 	}{
 		{name: "tag", args: []string{"--tag", "work"}, wantCount: 3},
 		{name: "tag mixed case", args: []string{"--tag", "WORK"}, wantCount: 3},
-		{name: "tag no match", args: []string{"--tag", "nonexistent"}},
+		{name: "tag no match", args: []string{"--tag", "nonexistent"}, wantCount: 0},
 		{name: "tag and type", args: []string{"--tag", "work", "--type", "todo"}, wantIDs: []string{"8814"}},
 		{name: "tag and limit", args: []string{"--tag", "work", "--limit", "1"}, wantCount: 1},
 		{name: "multiple tags are AND", args: []string{"--tag", "work", "--tag", "planning"}, wantIDs: []string{"8814"}},
 		{name: "comma-separated tags are AND", args: []string{"--tag", "work,meeting"}, wantIDs: []string{"8818"}},
-		{name: "tag and type no overlap", args: []string{"--tag", "meeting", "--type", "todo"}},
-		{name: "today excludes past testdata", args: []string{"--today"}},
+		{name: "tag and type no overlap", args: []string{"--tag", "meeting", "--type", "todo"}, wantCount: 0},
+		{name: "today excludes past testdata", args: []string{"--today"}, wantCount: 0},
 		{name: "slug", args: []string{"--slug", "meeting"}, wantIDs: []string{"8818"}},
 	}
 

@@ -176,8 +176,8 @@ func TestMemStore_PutZeroCreatedAtSetsToNow(t *testing.T) {
 	require.NoError(t, err)
 	after := time.Now()
 
-	assert.False(t, e.Meta.CreatedAt.Before(before))
-	assert.False(t, e.Meta.CreatedAt.After(after))
+	assert.False(t, e.Meta.CreatedAt.Before(before), "CreatedAt=%v before=%v", e.Meta.CreatedAt, before)
+	assert.False(t, e.Meta.CreatedAt.After(after), "CreatedAt=%v after=%v", e.Meta.CreatedAt, after)
 }
 
 func TestMemStore_PutAlwaysSetsUpdatedAt(t *testing.T) {

@@ -45,8 +45,8 @@ func TestOSStore_IDsOrderIntegerIDNotLexicographic(t *testing.T) {
 
 	ids, err := s.IDs()
 	require.NoError(t, err)
+	require.Len(t, ids, 11)
 	assert.Equal(t, []int{11, 10, 9}, ids[:3])
-	assert.Len(t, ids, 11)
 }
 
 func TestOSStore_PutNewCreatesFile(t *testing.T) {
@@ -218,18 +218,6 @@ func TestOSStore_RoundTripPreservesFrontmatterAndTags(t *testing.T) {
 	assert.Empty(t, want)
 }
 
-func assertFileExists(t *testing.T, path string) {
-	t.Helper()
-	_, err := os.Stat(path)
-	require.NoError(t, err)
-}
-
-func assertNoFile(t *testing.T, path string) {
-	t.Helper()
-	_, err := os.Stat(path)
-	assert.True(t, os.IsNotExist(err), "expected %s not to exist, got err=%v", path, err)
-}
-
 func TestOSStore_AllFilterByPublic(t *testing.T) {
 	s := newOSTestStore(t)
 
@@ -252,4 +240,16 @@ func TestOSStore_AllFilterByPublic(t *testing.T) {
 	require.NoError(t, err)
 	assertEntryIDs(t, []int{2}, priv)
 	assert.False(t, priv[0].Meta.Public)
+}
+
+func assertFileExists(t *testing.T, path string) {
+	t.Helper()
+	_, err := os.Stat(path)
+	require.NoError(t, err)
+}
+
+func assertNoFile(t *testing.T, path string) {
+	t.Helper()
+	_, err := os.Stat(path)
+	assert.True(t, os.IsNotExist(err), "expected %s not to exist, got err=%v", path, err)
 }
