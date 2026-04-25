@@ -885,7 +885,7 @@ Expected: all pass.
 Replace the `FilterByTags` function with:
 
 ```go
-// FilterByTags returns notesctl that contain all of the given tags in their frontmatter.
+// FilterByTags returns notes that contain all of the given tags in their frontmatter.
 // Per-note frontmatter parse errors are logged via log.Printf and the note is skipped.
 func FilterByTags(notes []Note, root string, tags []string) ([]Note, error) {
 	var results []Note

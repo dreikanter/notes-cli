@@ -53,7 +53,7 @@ New test cases:
 - `TestReadByTagFilter` — reads most recent note with matching tag
 - `TestReadByTypeFilter` — reads most recent note with matching type
 - `TestReadBySlugFilter` — reads most recent note with matching slug
-- `TestReadByTodayFilter` — returns error (no today notesctl in testdata)
+- `TestReadByTodayFilter` — returns error (no today notes in testdata)
 - `TestReadPositionalArgWithFilterErrors` — errors when both provided
 - `TestReadNoTargetErrors` — errors when nothing provided
 - `TestReadNoMatchErrors` — errors when filters match nothing

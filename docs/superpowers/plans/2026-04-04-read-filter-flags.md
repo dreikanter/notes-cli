@@ -122,7 +122,7 @@ func registerReadFlags() {
 	readCmd.Flags().String("type", "", "filter by note type")
 	readCmd.Flags().String("slug", "", "filter by slug")
 	readCmd.Flags().StringSlice("tag", nil, "filter by tag (repeatable, all must match)")
-	readCmd.Flags().Bool("today", false, "only match notesctl created today")
+	readCmd.Flags().Bool("today", false, "only match notes created today")
 	readCmd.Flags().BoolP("no-frontmatter", "F", false, "exclude YAML frontmatter from output")
 }
 
@@ -229,7 +229,7 @@ func TestReadBySlugFilter(t *testing.T) {
 }
 
 func TestReadByTodayFilter(t *testing.T) {
-	// No notesctl in testdata match today's date, so this should error.
+	// No notes in testdata match today's date, so this should error.
 	today := time.Now().Format("20060102")
 	_, err := runRead(t, "--today")
 	if err == nil {

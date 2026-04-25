@@ -732,7 +732,7 @@ No implementations and no behaviour changes — this PR only establishes the con
 
 ### Changed
 
-- Remove default limit from `ls`; output all notesctl unless `--limit` is specified. Handle SIGPIPE for clean pipe behavior ([#52])
+- Remove default limit from `ls`; output all notes unless `--limit` is specified. Handle SIGPIPE for clean pipe behavior ([#52])
 
 ## [0.1.38] - 2026-04-04
 
@@ -769,7 +769,7 @@ No implementations and no behaviour changes — this PR only establishes the con
 
 ### Added
 
-- Add `--today` flag to `ls` for filtering notesctl created today ([#42])
+- Add `--today` flag to `ls` for filtering notes created today ([#42])
 
 ## [0.1.31] - 2026-03-28
 

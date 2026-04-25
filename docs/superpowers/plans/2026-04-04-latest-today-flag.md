@@ -38,7 +38,7 @@ func runLatest(t *testing.T, args ...string) (string, error) {
 	latestCmd.Flags().StringSlice("type", nil, "filter by note type (repeatable)")
 	latestCmd.Flags().StringSlice("slug", nil, "filter by slug (repeatable)")
 	latestCmd.Flags().StringSlice("tag", nil, "filter by tag (repeatable, all must match)")
-	latestCmd.Flags().Bool("today", false, "only match notesctl created today")
+	latestCmd.Flags().Bool("today", false, "only match notes created today")
 
 	buf := new(bytes.Buffer)
 	rootCmd.SetOut(buf)
@@ -146,7 +146,7 @@ func scanAndFilter(cmd *cobra.Command, root string) (*note.Note, error) {
 }
 
 func init() {
-	latestCmd.Flags().Bool("today", false, "only match notesctl created today")
+	latestCmd.Flags().Bool("today", false, "only match notes created today")
 	latestCmd.Flags().StringSlice("type", nil, "filter by note type (repeatable)")
 	latestCmd.Flags().StringSlice("slug", nil, "filter by slug (repeatable)")
 	latestCmd.Flags().StringSlice("tag", nil, "filter by tag (repeatable, all must match)")
