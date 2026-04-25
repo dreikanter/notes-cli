@@ -4,9 +4,9 @@
 
 ### Changed
 
-- Complete the notesctl rename: update the Go module path, install target, binary/command name, import paths, documentation, and configuration environment variable (`NOTESCTL_PATH`) without compatibility shims for the old naming ([#TBD]).
+- Complete the notesctl rename: update the Go module path, install target, binary/command name, import paths, documentation, and configuration environment variable (`NOTESCTL_PATH`) without compatibility shims for the old naming ([#254]).
 
-[#TBD]: https://github.com/dreikanter/notesctl/pull/TBD
+[#254]: https://github.com/dreikanter/notesctl/pull/254
 
 ## [0.3.20] - 2026-04-24
 
