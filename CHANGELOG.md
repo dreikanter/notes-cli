@@ -6,8 +6,6 @@
 
 - Complete the notesctl rename: update the Go module path, Go install path, import paths, documentation, and configuration environment variable (`NOTESCTL_PATH`) without compatibility shims for the old naming. The CLI command and binary remain `notes` ([#254]).
 
-[#254]: https://github.com/dreikanter/notesctl/pull/254
-
 ## [0.3.20] - 2026-04-24
 
 ### Added
@@ -623,7 +621,7 @@ No implementations and no behaviour changes — this PR only establishes the con
 
 ### Changed
 
-- Update all references from `dreikanter/notesctl` to `dreikanter/notesctl` to match the renamed repository ([#102])
+- Update repository references to match the renamed repository ([#102])
 
 ## [0.1.65] - 2026-04-05
 
@@ -670,7 +668,7 @@ No implementations and no behaviour changes — this PR only establishes the con
 
 ### Changed
 
-- Remove note creation logic from `append` command; `append` now only appends to existing notesctl ([#90])
+- Remove note creation logic from `append` command; `append` now only appends to existing notes ([#90])
 
 ### Removed
 
@@ -799,7 +797,7 @@ No implementations and no behaviour changes — this PR only establishes the con
 
 ### Added
 
-- Add `update` command for updating frontmatter and renaming notesctl ([#34])
+- Add `update` command for updating frontmatter and renaming notes ([#34])
 
 ## [0.1.26] - 2026-03-28
 
@@ -817,7 +815,7 @@ No implementations and no behaviour changes — this PR only establishes the con
 
 ### Added
 
-- Add `append` command for appending stdin text to existing notesctl ([#30])
+- Add `append` command for appending stdin text to existing notes ([#30])
 
 ## [0.1.23] - 2026-03-24
 
@@ -975,7 +973,6 @@ No implementations and no behaviour changes — this PR only establishes the con
 [#25]: https://github.com/dreikanter/notesctl/pull/25
 [#27]: https://github.com/dreikanter/notesctl/pull/27
 [#28]: https://github.com/dreikanter/notesctl/pull/28
-[#29]: https://github.com/dreikanter/notesctl/pull/29
 [#30]: https://github.com/dreikanter/notesctl/pull/30
 [#31]: https://github.com/dreikanter/notesctl/pull/31
 [#33]: https://github.com/dreikanter/notesctl/pull/33
@@ -1056,3 +1053,4 @@ No implementations and no behaviour changes — this PR only establishes the con
 [#166]: https://github.com/dreikanter/notesctl/pull/166
 [#167]: https://github.com/dreikanter/notesctl/pull/167
 [#168]: https://github.com/dreikanter/notesctl/pull/168
+[#254]: https://github.com/dreikanter/notesctl/pull/254

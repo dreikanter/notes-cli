@@ -12,7 +12,7 @@
 
 ## Prereqs
 
-- Run from the worktree at `/Users/alex/src/notesctl/.claude/worktrees/humming-foraging-wozniak`.
+- Run from the worktree at `$REPO_ROOT/.claude/worktrees/humming-foraging-wozniak`.
 - Branch is rebased onto `origin/main` (commit `b30f330`, which is [PR #113](https://github.com/dreikanter/notesctl/pull/113) — the `ParseNote` / `FormatNote` API refactor).
 - The design spec is already committed on the branch.
 - PR #113 also moved `CHANGELOG.md`'s "next patch" to `[0.1.72]`. This plan's CHANGELOG entry targets `[0.1.73]`.
