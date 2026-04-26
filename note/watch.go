@@ -184,11 +184,17 @@ func (s *OSStore) runWatch(
 				stopTimer()
 				return
 			}
-			if ev.Op&fsnotify.Create != 0 {
+			if ev.Op&fsnotify.Create != 0 && watchEventIsDir(ev.Name) {
 				addCreatedDir(fsw, ev.Name)
+				for _, e := range s.discoverWatchCreates(known) {
+					order = coalesceWatchEvent(pending, order, e)
+				}
 			}
 			e, ok := classifyWatchEvent(ev, known)
 			if !ok {
+				if len(pending) > 0 {
+					armTimer()
+				}
 				continue
 			}
 			order = coalesceWatchEvent(pending, order, e)
@@ -222,6 +228,11 @@ func addWatchDirs(fsw *fsnotify.Watcher, root string) error {
 	})
 }
 
+func watchEventIsDir(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
+}
+
 func addCreatedDir(fsw *fsnotify.Watcher, path string) {
 	_ = filepath.WalkDir(path, func(p string, d fs.DirEntry, err error) error {
 		if err != nil || !d.IsDir() {
@@ -230,6 +241,22 @@ func addCreatedDir(fsw *fsnotify.Watcher, path string) {
 		_ = fsw.Add(p)
 		return nil
 	})
+}
+
+func (s *OSStore) discoverWatchCreates(known map[int]bool) []Event {
+	refs, err := s.scanFileRefs()
+	if err != nil {
+		return nil
+	}
+	events := make([]Event, 0)
+	for _, r := range refs {
+		if known[r.id] {
+			continue
+		}
+		known[r.id] = true
+		events = append(events, Event{Type: EventCreated, ID: r.id})
+	}
+	return events
 }
 
 func classifyWatchEvent(ev fsnotify.Event, known map[int]bool) (Event, bool) {
@@ -277,9 +304,12 @@ func coalesceWatchEvent(pending map[int]Event, order []int, next Event) []int {
 	prev, ok := pending[next.ID]
 	if !ok {
 		pending[next.ID] = next
-		return append(order, next.ID)
+		return appendWatchOrder(order, next.ID)
 	}
 
+	if prev.Type == EventCreated && next.Type == EventUpdated {
+		return order
+	}
 	if prev.Type == EventCreated && next.Type == EventDeleted {
 		delete(pending, next.ID)
 		return order
@@ -290,4 +320,13 @@ func coalesceWatchEvent(pending map[int]Event, order []int, next Event) []int {
 	}
 	pending[next.ID] = next
 	return order
+}
+
+func appendWatchOrder(order []int, id int) []int {
+	for _, existing := range order {
+		if existing == id {
+			return order
+		}
+	}
+	return append(order, id)
 }

@@ -2,8 +2,6 @@ package note
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -22,11 +20,21 @@ func TestWatchCoalesceCreateDeleteEmitsNothing(t *testing.T) {
 	assert.Equal(t, []int{1}, order)
 }
 
-func TestWatchCoalesceLastEventWins(t *testing.T) {
+func TestWatchCoalesceCreatedThenUpdatedStaysCreated(t *testing.T) {
 	pending := make(map[int]Event)
 	var order []int
 
 	order = coalesceWatchEvent(pending, order, Event{Type: EventCreated, ID: 1})
+	order = coalesceWatchEvent(pending, order, Event{Type: EventUpdated, ID: 1})
+
+	assert.Equal(t, Event{Type: EventCreated, ID: 1}, pending[1])
+	assert.Equal(t, []int{1}, order)
+}
+
+func TestWatchCoalesceLastEventWins(t *testing.T) {
+	pending := make(map[int]Event)
+	var order []int
+
 	order = coalesceWatchEvent(pending, order, Event{Type: EventUpdated, ID: 1})
 	order = coalesceWatchEvent(pending, order, Event{Type: EventDeleted, ID: 1})
 
@@ -45,11 +53,21 @@ func TestWatchCoalesceDeleteCreateIsUpdate(t *testing.T) {
 	assert.Equal(t, []int{1}, order)
 }
 
+func TestWatchCoalesceRecreateAfterCreateDeleteKeepsSingleOrderEntry(t *testing.T) {
+	pending := make(map[int]Event)
+	var order []int
+
+	order = coalesceWatchEvent(pending, order, Event{Type: EventCreated, ID: 1})
+	order = coalesceWatchEvent(pending, order, Event{Type: EventDeleted, ID: 1})
+	order = coalesceWatchEvent(pending, order, Event{Type: EventCreated, ID: 1})
+
+	assert.Equal(t, Event{Type: EventCreated, ID: 1}, pending[1])
+	assert.Equal(t, []int{1}, order)
+}
+
 func TestOSStoreWatchCreatedUpdatedDeleted(t *testing.T) {
 	s := newOSTestStore(t)
 	created := time.Date(2026, 1, 15, 9, 0, 0, 0, time.UTC)
-	watchRoot := filepath.Join(s.Root(), "2026", "01")
-	require.NoError(t, os.MkdirAll(watchRoot, StoreDirMode(s.Root())))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -96,8 +114,6 @@ func TestOSStoreWatchDebouncesSameID(t *testing.T) {
 func TestOSStoreWatchCloseWhilePending(t *testing.T) {
 	s := newOSTestStore(t)
 	created := time.Date(2026, 1, 15, 9, 0, 0, 0, time.UTC)
-	watchRoot := filepath.Join(s.Root(), "2026", "01")
-	require.NoError(t, os.MkdirAll(watchRoot, StoreDirMode(s.Root())))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
