@@ -4,7 +4,7 @@
 
 ### Added
 
-- Add GitHub Actions workflows based on go-simpler's shared lint, test, and vulnerability scans; the test workflow runs against stable Go on Linux and macOS, and the module now targets Go 1.25.8 so govulncheck uses the fixed standard library ([#260]).
+- Add GitHub Actions workflows based on go-simpler's shared lint, test, and vulnerability scans; the test workflow runs against stable Go on Linux and macOS, golangci-lint is upgraded to the latest stable v2 release, and the module now targets Go 1.25.8 so govulncheck uses the fixed standard library ([#260]).
 
 [#260]: https://github.com/dreikanter/notesctl/pull/260
 

@@ -21,7 +21,4 @@ jobs:
 
       # https://github.com/golangci/golangci-lint-action
       - name: Run linters
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: v1.64.8
-          install-mode: goinstall
+        uses: golangci/golangci-lint-action@v9
