@@ -1,0 +1,10 @@
+name: vuln
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  vuln:
+    uses: go-simpler/.github/.github/workflows/vuln.yaml@main

@@ -1,0 +1,10 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    uses: go-simpler/.github/.github/workflows/lint.yaml@main
