@@ -2,6 +2,6 @@
 
 -
 
-## References
+## References <!-- Drop this section if no references -->
 
-- <!-- closes | relates to | depends on | blocked by --> #
+- <!-- Closes | Relates to | Depends on | Blocked by --> #
