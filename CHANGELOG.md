@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.28]
+
+### Changed
+
+- New notes no longer have an automatic `date:` field added to their frontmatter. The filename already encodes the creation date, and notes that explicitly carry `date:` (e.g. authored by hand) still round-trip with the field preserved.
+
 ## [0.3.27] - 2026-04-27
 
 ### Changed
