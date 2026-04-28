@@ -462,8 +462,10 @@ func (s *OSStore) pathFor(entry Entry) (rel, abs string) {
 // frontmatterToMeta converts the on-disk frontmatter into the public
 // Meta. Body hashtags are merged into Meta.Tags; Meta.UpdatedAt is set
 // from the file ModTime; Meta.CreatedAt falls back to the filename date when
-// the frontmatter has no date.
+// the frontmatter has no date. Meta.DateInFrontmatter records whether the
+// source had an explicit "date:" key so writes preserve that choice.
 func frontmatterToMeta(fm frontmatter, r fileRef, modTime time.Time, body []byte) Meta {
+	dateInFrontmatter := !fm.Date.IsZero()
 	created := fm.Date
 	if created.IsZero() {
 		if t, err := time.Parse(DateFormat, r.date); err == nil {
@@ -480,22 +482,26 @@ func frontmatterToMeta(fm frontmatter, r fileRef, modTime time.Time, body []byte
 	}
 
 	return Meta{
-		Title:       fm.Title,
-		Slug:        slug,
-		Type:        noteType,
-		CreatedAt:   created,
-		UpdatedAt:   modTime,
-		Tags:        computeMergedTags(fm.Tags, normalizeHashtags(ExtractHashtags(body))),
-		Aliases:     append([]string(nil), fm.Aliases...),
-		Description: fm.Description,
-		Public:      fm.Public,
-		Extra:       extraFromYAML(fm.Extra),
+		Title:             fm.Title,
+		Slug:              slug,
+		Type:              noteType,
+		CreatedAt:         created,
+		DateInFrontmatter: dateInFrontmatter,
+		UpdatedAt:         modTime,
+		Tags:              computeMergedTags(fm.Tags, normalizeHashtags(ExtractHashtags(body))),
+		Aliases:           append([]string(nil), fm.Aliases...),
+		Description:       fm.Description,
+		Public:            fm.Public,
+		Extra:             extraFromYAML(fm.Extra),
 	}
 }
 
 // metaToFrontmatter converts Meta into the on-disk frontmatter. Body
 // hashtags are *not* stripped from Meta.Tags — they round-trip through the
-// frontmatter alongside the originals. UpdatedAt is never written.
+// frontmatter alongside the originals. UpdatedAt is never written. The
+// "date:" field is emitted only when m.DateInFrontmatter is true; the
+// filename always encodes the date, so notes created without an explicit
+// "date:" key stay that way.
 func metaToFrontmatter(m Meta) frontmatter {
 	var aliases []string
 	if len(m.Aliases) > 0 {
@@ -505,11 +511,15 @@ func metaToFrontmatter(m Meta) frontmatter {
 	if len(m.Tags) > 0 {
 		tags = append([]string(nil), m.Tags...)
 	}
+	var date time.Time
+	if m.DateInFrontmatter {
+		date = m.CreatedAt
+	}
 	return frontmatter{
 		Title:       m.Title,
 		Slug:        m.Slug,
 		Type:        m.Type,
-		Date:        m.CreatedAt,
+		Date:        date,
 		Tags:        tags,
 		Aliases:     aliases,
 		Description: m.Description,

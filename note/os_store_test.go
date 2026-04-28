@@ -220,6 +220,38 @@ func TestOSStore_RoundTripPreservesFrontmatterAndTags(t *testing.T) {
 	assert.Empty(t, want)
 }
 
+func TestOSStore_PutNewOmitsDateFromFrontmatter(t *testing.T) {
+	s := newOSTestStore(t)
+	created := time.Date(2026, 1, 15, 9, 0, 0, 0, time.UTC)
+
+	entry, err := s.Put(Entry{Meta: Meta{Title: "t", CreatedAt: created}, Body: "body"})
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(s.AbsPath(entry))
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "date:")
+}
+
+func TestOSStore_PreservesExplicitFrontmatterDate(t *testing.T) {
+	s := newOSTestStore(t)
+	dir := filepath.Join(s.Root(), "2026", "01")
+	require.NoError(t, os.MkdirAll(dir, 0o755))
+	path := filepath.Join(dir, "20260115_1.md")
+	require.NoError(t, os.WriteFile(path, []byte("---\ntitle: T\ndate: 2026-01-15T15:30:00Z\n---\n\nbody\n"), 0o644))
+
+	got, err := s.Get(1)
+	require.NoError(t, err)
+	assert.True(t, got.Meta.DateInFrontmatter)
+
+	got.Meta.Title = "T2"
+	saved, err := s.Put(got)
+	require.NoError(t, err)
+
+	data, err := os.ReadFile(s.AbsPath(saved))
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "date: 2026-01-15T15:30:00Z")
+}
+
 func TestOSStore_AllFilterByPublic(t *testing.T) {
 	s := newOSTestStore(t)
 

@@ -87,6 +87,15 @@ func TestNewWithPublic(t *testing.T) {
 	assert.Contains(t, string(data), "public: true")
 }
 
+func TestNewOmitsDateFromFrontmatter(t *testing.T) {
+	root := copyTestdata(t)
+	out, err := runNew(t, root, "", "--title", "Note", "--tag", "x")
+	require.NoError(t, err)
+	data, err := os.ReadFile(out)
+	require.NoError(t, err)
+	assert.NotContains(t, string(data), "date:")
+}
+
 func TestNewAllDigitSlugErrors(t *testing.T) {
 	root := copyTestdata(t)
 	_, err := runNew(t, root, "", "--slug", "999")
