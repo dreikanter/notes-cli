@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.29]
+
+### Added
+
+- `notes config` prints the effective runtime configuration: the resolved notes store path with its source (flag, env, or unset), the per-command default values for `annotate --model` / `--max-chars` / `--timeout`, and a present/absent indicator for required external env vars (`NOTES_PATH`, `ANTHROPIC_API_KEY`). The store path is validated inline so a missing directory is surfaced in the output without aborting; env var values are never printed ([#266]).
+
+[#266]: https://github.com/dreikanter/notesctl/pull/266
+
 ## [0.3.28] - 2026-04-29
 
 ### Changed
