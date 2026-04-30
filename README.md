@@ -95,6 +95,9 @@ notes update 8823 --private
 
 # List all tags (frontmatter + body hashtags)
 notes tags
+
+# Print the effective runtime configuration (resolved store path, defaults, env vars)
+notes config
 ```
 
 Composing with the shell — since most commands take an ID, use `ls` or
