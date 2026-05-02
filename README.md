@@ -1,4 +1,4 @@
-# notesctl
+# notes
 
 A command-line tool for managing a plain-text note archive you own entirely.
 
@@ -15,12 +15,12 @@ The tool doesn't try to be a knowledge graph, a publishing platform, or a second
 2. **Retrieve** — find it again by ID, type, tag, or slug
 3. **Integrate** — pipe notes into other tools, scripts, and AI assistants
 
-Think of it as the storage layer that sits underneath your workflow, not the workflow itself. Obsidian and Logseq are rich GUIs built around their own vaults. notesctl is closer to a structured `~/notes` directory with a fast command-line interface on top — no plugins, no sync service, no lock-in. The files are yours; the CLI is optional convenience.
+Think of it as the storage layer that sits underneath your workflow, not the workflow itself. Obsidian and Logseq are rich GUIs built around their own vaults. notes is closer to a structured `~/notes` directory with a fast command-line interface on top — no plugins, no sync service, no lock-in. The files are yours; the CLI is optional convenience.
 
 ## Install
 
 ```sh
-go install github.com/dreikanter/notesctl/cmd/notes@latest
+go install github.com/dreikanter/notes/cmd/notes@latest
 ```
 
 Make sure `~/go/bin` is on your `PATH`:

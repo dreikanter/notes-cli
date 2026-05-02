@@ -1,4 +1,4 @@
-module github.com/dreikanter/notesctl
+module github.com/dreikanter/notes
 
 go 1.25.8
 

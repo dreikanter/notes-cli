@@ -1,4 +1,4 @@
-# notesctl
+# notes
 
 ## Build & Install
 

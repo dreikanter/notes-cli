@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dreikanter/notesctl/note"
+	"github.com/dreikanter/notes/note"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )

@@ -1,9 +1,9 @@
 # Note frontmatter schema
 
 Reserved keys are the fields declared on `Frontmatter` in
-`github.com/dreikanter/notesctl/note`. Any key not listed below is
+`github.com/dreikanter/notes/note`. Any key not listed below is
 preserved verbatim on read/write (stored in `Frontmatter.Extra`)
-and ignored by notesctl itself.
+and ignored by notes itself.
 
 Downstream projects (notes-pub, notes-view) and users are free to
 introduce new bare keys. Collision risk with future reserved names
@@ -20,17 +20,17 @@ is called out in `CHANGELOG.md` when a new reserved key is added.
 - **Type:** string
 - **Semantics:** URL-safe identifier, canonical in frontmatter. The
   filename may carry a cached copy; on mismatch, frontmatter wins.
-- **Consumers:** notesctl (`new`, `update --sync-filename`),
+- **Consumers:** notes (`new`, `update --sync-filename`),
   notes-pub (URL path segment).
 
 ### type
 - **Type:** string
 - **Semantics:** note category. Any value is valid. A small set of
-  values (`todo`, `backlog`, `weekly`) trigger special notesctl
+  values (`todo`, `backlog`, `weekly`) trigger special notes
   behavior; see `note.HasSpecialBehavior`. The filename may
   carry a cached copy as a `.type` dot-suffix; on mismatch,
   frontmatter wins.
-- **Consumers:** notesctl (filters, rollover), notes-pub / notes-view
+- **Consumers:** notes (filters, rollover), notes-pub / notes-view
   (optional rendering).
 
 ### date
@@ -52,14 +52,14 @@ is called out in `CHANGELOG.md` when a new reserved key is added.
 - **Type:** list of strings
 - **Semantics:** free-form tags, matched case-sensitively. In-body
   `#hashtag` usage is a separate feature not governed by this field.
-- **Consumers:** notesctl (`tags`, filters), notes-pub (tag pages,
+- **Consumers:** notes (`tags`, filters), notes-pub (tag pages,
   feed), notes-view.
 
 ### aliases
 - **Type:** list of strings
 - **Semantics:** prior identifiers for the note — historical slugs,
   legacy IDs, or alternate names that should continue to resolve to
-  this note after a rename. notesctl itself does not yet consume this
+  this note after a rename. notes itself does not yet consume this
   field; it is reserved so downstream publishers can implement
   permalink redirects and rename-history handling without collision
   risk.
@@ -79,13 +79,13 @@ is called out in `CHANGELOG.md` when a new reserved key is added.
 
 ## Unreserved keys
 
-Any other top-level key is preserved untouched by notesctl. Nested
+Any other top-level key is preserved untouched by notes. Nested
 structures (mappings, sequences) are preserved intact.
 
 Duplicate top-level keys are rejected at the document level.
 Non-scalar keys are rejected. Anchors and aliases in the YAML
 tree are preserved inside `Extra` values as-is but are not
-specifically tested in notesctl; use at your own risk.
+specifically tested in notes; use at your own risk.
 
 ## Process
 
