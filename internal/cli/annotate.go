@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dreikanter/notesctl/note"
+	"github.com/dreikanter/notes/note"
 	"github.com/spf13/cobra"
 )
 

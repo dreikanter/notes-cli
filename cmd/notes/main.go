@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/dreikanter/notesctl/internal/cli"
+	"github.com/dreikanter/notes/internal/cli"
 )
 
 func main() {

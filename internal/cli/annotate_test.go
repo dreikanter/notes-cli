@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/dreikanter/notesctl/note"
+	"github.com/dreikanter/notes/note"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
